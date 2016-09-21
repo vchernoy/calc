@@ -1,4 +1,5 @@
 import string
+from fractions import gcd
 
 class Token:
     l_paren = '('
@@ -372,9 +373,19 @@ class Node:
             pos_vars = {v:p for (v,p) in res_vars.iteritems() if p > 0}
             inv_vars = {v:-p for (v,p) in res_vars.iteritems() if p < 0}
 
-            res_coefficient = float(self.coefficient) / evaluated.coefficient
+            if (type(self.coefficient) == int) and (type(evaluated.coefficient) == int):
+                gcd_val = gcd(self.coefficient, evaluated.coefficient)
+                res_coefficient = self.coefficient / gcd_val
+                inv_coefficient = evaluated.coefficient / gcd_val
+            else:
+                res_coefficient = float(self.coefficient) / evaluated.coefficient
+                inv_coefficient = 1
 
-            return Node.inverse(Node(operation=evaluated.operation, vars=inv_vars, operands=evaluated.operands), coefficient=res_coefficient, vars=pos_vars)
+            return Node.inverse(
+                Node(operation=evaluated.operation, vars=inv_vars, operands=evaluated.operands, coefficient=inv_coefficient),
+                coefficient=res_coefficient,
+                vars=pos_vars
+            )
 
         assert False
 
@@ -415,6 +426,40 @@ class Node:
 
         if self.operation == Node.inv:
             return self
+
+    def solve(self, var):
+        if var not in self.variables():
+            return None
+
+        if self.operation != Node.add:
+            return None
+
+        var_terms = [t for t in self.operands if var in t.variables()]
+        non_var_terms = [t for t in self.operands if var not in t.variables()]
+        if not var_terms:
+            return None
+
+        var_power = set()
+        for term in var_terms:
+            for t in term.operands:
+                if var in t.variables():
+                    return None
+
+            var_power.add(term.vars[var])
+
+        if len(var_power) != 1:
+            return None
+
+        power = var_power.pop()
+
+
+        term1 = Node.negative(Node.addition(non_var_terms))
+        term2 = Node.inverse(Node.addition(var_terms), vars={var:power})
+
+        # print 'solve', var, ':', str(term1), ' -- ', str(term2)
+        return Node.multiplication([term1, term2]).simplify()
+
+        # return Node.multiplication([Node.negative(self.operands[0]), Node.inverse(self.operands[1], vars={var:self.operands[-1].vars[var]})]).simplify()
 
     def variables(self):
         res = set(self.vars.keys())
@@ -593,7 +638,7 @@ input = '(a - b) * (a - b) * (a - b)'
 input = '(3+(4-1))*5'
 input = '2 * x + 0.5 = 1'
 input = '2x + 1 = 2(1-x)'
-
+input = '2(a*x-5/z)=4/z'
 toks = tokenizer.tokenize(Reader(input))
 
 tok_list = [t for t in toks]
@@ -660,6 +705,14 @@ if ast:
     print t
     print
 
+    eq = ast.simplify().expand()
+    var = eq.variables().pop()
+
+    sol = eq.solve(var)
+    print 'solve on', var, '=', str(sol)
+    print 'solve on', var, '=', str(sol.expand() if sol else None)
+
+    print
     print ast.simplify().expand().simplify()
     print ast.simplify().expand().expand().simplify()
     print parse(str(ast.simplify().expand().expand().simplify()), errors).simplify()
