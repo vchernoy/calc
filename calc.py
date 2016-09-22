@@ -143,13 +143,10 @@ def incby(acc_vars, added_vars):
             del acc_vars[var]
 
 class Node:
-    # num = 'num.'
-    # var = 'var'
-    add = '+.'
-    # neg = '-.'
-    mul = '*.'
-    inv = '/.'
-    one = 'one'
+    add = '+'
+    mul = '*'
+    inv = '/'
+    one = '1'
 
     @staticmethod
     def term(coefficient, vars):
@@ -220,6 +217,19 @@ class Node:
             return Node.term(coefficient=coefficient, vars=vars)
 
         if (node.coefficient != 0) and (not node.vars) and (node.operation == Node.one):
+            if (type(coefficient) == int) and (type(node.coefficient) == int):
+                gcd_val = gcd(coefficient, node.coefficient)
+                res_coefficient = coefficient / gcd_val
+                inv_coefficient = node.coefficient / gcd_val
+                if inv_coefficient < 0:
+                    res_coefficient = -res_coefficient
+                    inv_coefficient = -inv_coefficient
+
+                if inv_coefficient == 1:
+                    return Node.term(vars=vars, coefficient=res_coefficient)
+
+                return Node(operation=Node.inv, operands=[Node.number(inv_coefficient)], vars=vars, coefficient=res_coefficient)
+
             return Node.term(vars=vars, coefficient=float(coefficient)/node.coefficient)
 
         return Node(operation=Node.inv, operands=[node], vars=vars, coefficient=coefficient)
@@ -235,7 +245,7 @@ class Node:
         assert self.operation in [Node.one, Node.mul, Node.add, Node.inv]
         assert type(self.vars) == dict
         assert type(self.operands) == list
-        assert type(self.coefficient) in [float, int]
+        assert type(self.coefficient) in [float, int, long]
 
         if self.operation in [Node.add, Node.mul]:
             assert type(self.operands) == list
@@ -273,6 +283,7 @@ class Node:
         elif self.operation == Node.add:
             if self.vars:
                 res += '*'
+
             in_extra_parenthesis = res != ''
             if in_extra_parenthesis:
                 res += '('
@@ -290,8 +301,9 @@ class Node:
                 res += ')'
 
         elif self.operation == Node.inv:
-            if not res:
-                res = '1'
+            if not res or (res == '-'):
+                res += '1'
+
             res += '/' + self.operands[0].to_str(True)
         else:
             # error
@@ -345,23 +357,65 @@ class Node:
             return Node.addition(terms+neg_degree, coefficient=self.coefficient, vars=self.vars)
 
         if self.operation == Node.mul:
+            evaluated0 = [n.simplify() for n in self.operands]
+            evaluated1 = []
+
             res_coefficient = self.coefficient
             res_vars = {}
             incby(res_vars, self.vars)
-            evaluated0 = [n.simplify() for n in self.operands]
-            evaluated = []
+
             for n in evaluated0:
+                if n.operation == Node.mul:
+                    incby(res_vars, n.vars)
+                    res_coefficient *= n.coefficient
+                    evaluated1 += n.operands
+                else:
+                    evaluated1.append(n)
+
+            evaluated2 = []
+            for n in evaluated1:
+                assert n.operation != Node.mul
+
                 incby(res_vars, n.vars)
                 res_coefficient *= n.coefficient
 
-                if n.operation == Node.mul:
-                    evaluated += n.operands
-                elif n.operation == Node.add:
-                    evaluated.append(Node.addition(nodes=n.operands))
-                elif n.operation == Node.inv:
-                    evaluated.append(Node.inverse(node=n.operands[0]))
+                if n.operation != Node.one:
+                    evaluated2.append(Node(operation=n.operation, operands=n.operands).simplify())
 
-            return Node.multiplication(evaluated, coefficient=res_coefficient, vars=res_vars)
+            # return Node.multiplication(nodes=evaluated2, coefficient=res_coefficient, vars=res_vars)
+
+            evaluated3 = [n for n in evaluated2 if n.operation != Node.inv]
+            inv_coefficient = 1
+            for n in evaluated2:
+                assert n.operation in [Node.inv, Node.add]
+                assert n.coefficient == 1
+                assert not n.vars
+
+                if n.operation == Node.inv:
+                    t = n.operands[0]
+                    incby(res_vars, {v:-p for (v,p) in t.vars.iteritems()})
+                    inv_coefficient *= t.coefficient
+                    if t.operation != Node.one:
+                        evaluated3.append(Node.inverse(Node(operation=t.operation, operands=t.operands)))
+
+            # evaluated3 = evaluated2
+
+            evaluated = []
+            for n in evaluated3:
+                assert n.operation in [Node.inv, Node.add]
+                assert n.coefficient == 1
+                assert not n.vars
+
+                evaluated.append(n)
+
+            pos_vars = {v:p for (v,p) in res_vars.iteritems() if p > 0}
+            inv_vars = {v:-p for (v,p) in res_vars.iteritems() if p < 0}
+
+            n = Node.inverse(node=Node.term(inv_coefficient, inv_vars), vars=pos_vars, coefficient=res_coefficient)
+            if (n.operation != Node.one) or (n.coefficient != 1) or n.vars:
+                evaluated += [n]
+
+            return Node.multiplication(evaluated)
 
         if self.operation == Node.inv:
             evaluated = self.operands[0].simplify()
@@ -373,17 +427,45 @@ class Node:
             pos_vars = {v:p for (v,p) in res_vars.iteritems() if p > 0}
             inv_vars = {v:-p for (v,p) in res_vars.iteritems() if p < 0}
 
-            if (type(self.coefficient) == int) and (type(evaluated.coefficient) == int):
-                gcd_val = gcd(self.coefficient, evaluated.coefficient)
-                res_coefficient = self.coefficient / gcd_val
-                inv_coefficient = evaluated.coefficient / gcd_val
-            else:
-                res_coefficient = float(self.coefficient) / evaluated.coefficient
-                inv_coefficient = 1
+            # 2x*x / node
+            # node = 5a*b / n
+            # 2x*x / 5a*b * n
+
+            if evaluated.operation == Node.one:
+                return  Node.inverse(
+                    Node.term(evaluated.coefficient, inv_vars),
+                    coefficient=self.coefficient,
+                    vars=pos_vars
+                )
+
+            if evaluated.operation == Node.inv:
+                return Node.multiplication(
+                    nodes = [
+                        Node.inverse(
+                            Node.term(evaluated.coefficient, inv_vars),
+                            coefficient=self.coefficient,
+                            vars=pos_vars
+                        ),
+                        evaluated.operands[0]
+                    ]
+                ).simplify()
+
+            if evaluated.operation == Node.mul:
+                inversed_terms = [Node.inverse(t) for t in evaluated.operands if t.operation == Node.inv]
+                other_terms = [t for t in evaluated.operands if t.operation != Node.inv]
+                return Node.multiplication(
+                    nodes = [
+                        Node.inverse(
+                            Node.multiplication(other_terms, coefficient=evaluated.coefficient, vars=inv_vars),
+                            coefficient=self.coefficient,
+                            vars=pos_vars
+                        )
+                    ] + inversed_terms
+                ).simplify()
 
             return Node.inverse(
-                Node(operation=evaluated.operation, vars=inv_vars, operands=evaluated.operands, coefficient=inv_coefficient),
-                coefficient=res_coefficient,
+                Node(operation=evaluated.operation, vars=inv_vars, operands=evaluated.operands, coefficient=evaluated.coefficient).simplify(),
+                coefficient=self.coefficient,
                 vars=pos_vars
             )
 
@@ -431,7 +513,26 @@ class Node:
         if var not in self.variables():
             return None
 
+        if self.operation == Node.one:
+            return (Node.number(0), Node.variable(var))
+
+        if self.operation == Node.inv:
+            if var in self.operands[0].variables():
+                return None
+
+            return (Node.number(0), Node.variable(var))
+
+        if self.operation == Node.mul:
+            for n in self.operands:
+                if var in n.variables():
+                    return None
+
+            return (Node.number(0), Node.variable(var))
+
         if self.operation != Node.add:
+            return None
+
+        if self.vars.get(var,0) != 0:
             return None
 
         var_terms = [t for t in self.operands if var in t.variables()]
@@ -452,12 +553,23 @@ class Node:
 
         power = var_power.pop()
 
+        reduced_var_terms = []
+        for term in var_terms:
+            reduced_vars = {}
+            incby(reduced_vars, term.vars)
+            incby(reduced_vars, {var:-power})
+            reduced_var_terms.append(Node(operation=term.operation, operands=term.operands, coefficient=term.coefficient, vars=reduced_vars))
 
-        term1 = Node.negative(Node.addition(non_var_terms))
-        term2 = Node.inverse(Node.addition(var_terms), vars={var:power})
+        term1 = Node.negative(Node.addition(non_var_terms)).expand()
+        term2 = Node.inverse(Node.addition(reduced_var_terms))
 
         # print 'solve', var, ':', str(term1), ' -- ', str(term2)
-        return Node.multiplication([term1, term2]).simplify()
+        # 3y(2x + x*a + 5y + 3z + 1) == 0
+        # 2x + x*a == -(5y + 3z + 1)
+        return (
+            Node.multiplication([term1, term2]),
+            Node.term(coefficient=1, vars={var:power})
+        )
 
         # return Node.multiplication([Node.negative(self.operands[0]), Node.inverse(self.operands[1], vars={var:self.operands[-1].vars[var]})]).simplify()
 
@@ -609,16 +721,19 @@ def parse(s, errors):
 
 tokenizer = Tokenizer()
 input = '(-2 + 3.5 + x + abc) - 2 - 4'
-# input = '2 * 3 + 5x*(2+3x) + 5(2+3)/4x + 2/3'
+input = '2 * 3 + 5z*(2+3x) + 5(2+3)/4*x + 2/3'
 
-# input = '-2 * 3(10-5) / 2 *3r=2r/r + 2/(1/(10/(1/10))) + 2/(1/x) + (-(-(-(-x)))) + x*(1+x)*(2+3x) +'
-# reader = Reader('2/(1/x)')
-# reader = Reader('1/(2/x)')
-# reader = Reader('2/(1/x)')
-# reader = Reader('1/(2/x)')
+input = 'x/2+ x/3 + 3/5*(1+x) = 12'
+# input = '10 + 5z*(2+3x) + 10/2*x'
+
+
+# input = '-2 * 3(10-5) / 2 *3r=2r/r + 2/(1/(10/(1/10))) + 2/(1/x) + (-(-(-(-x)))) + x*(1+x)*(2+3x) '
+# input = '2/(1/x)'
+# input = '1/(2/x)'
+
 # input = '10(1+5)-34*20/34/2*3x=10(1+x)'
 # input = '-3(x+1)*(2x-5)*(-x-2)+6x'
-# input = 'x*x*x*z + 5y*x - 2 - x * (b*b+5a) - ((-2)+(5*x*y)+((-5)*a*x)+(-(b*x*b))+(x*z*x*x))'
+
 # input = '2/(1/(10/(1/10)))'
 # input = '2/(1/x)'
 # input = '1/x'
@@ -627,6 +742,7 @@ input = '(-2 + 3.5 + x + abc) - 2 - 4'
 
 # input = 'a*(2+1)'
 
+# input = 'x*x*x*z + 5y*x - 2 - x * (b*b+5a) - ((-2)+(5*x*y)+((-5)*a*x)+(-(b*x*b))+(x*z*x*x))'
 # input = 'x*x*x*z + 5y*x - 2 - x * b*b+5a*(-x) - (-2)-(5*x*y)-((-5)*a*x)-(-(b*x*b))-(x*z*x*x)'
 # input = '(a + b) * (a + b)'
 # input = 'x * (1+a)'
@@ -634,11 +750,21 @@ input = '(-2 + 3.5 + x + abc) - 2 - 4'
 # input = 'x * (b*b+5a - 2*b*b)'
 # input = '-(-x+z)'
 
-input = '(a - b) * (a - b) * (a - b)'
-input = '(3+(4-1))*5'
-input = '2 * x + 0.5 = 1'
-input = '2x + 1 = 2(1-x)'
-input = '2(a*x-5/z)=4/z'
+# input = '(a - b) * (a - b) * (a - b)'
+# input = '(3+(4-1))*5'
+# input = '2 * x + 0.5 = 1'
+# input = '2x + 1 = 2(1-x)'
+# input = '2(a*x-5/z)=4/z'
+# input = 'x*x/20/w=z+5'
+# input = 'a/(10/b)=w'
+
+# input = 'a*(1/x*(3/(5b)))=30'
+# input = '30*(a/(3a*((1/b)*(1/x)*(1/5))))'
+
+# input = '30*(1/(3*(1/b)))'
+# input = '(1/(3*(1/b)))'
+# input = '1/(3*(1/b))'
+
 toks = tokenizer.tokenize(Reader(input))
 
 tok_list = [t for t in toks]
@@ -660,35 +786,27 @@ if errors:
 if ast:
     print 'input:', input
 
-    print ast
-    print repr(ast)
+    # print ast
+    # print repr(ast)
 
     print ast.variables()
-    print ast.degree()
-    print ast.degree('x')
-
-    print ast.simplify()
-    print ast.simplify().simplify()
-
-    print ast.variables()
-    print ast.simplify().variables()
-
-    print ast.expand()
-    print ast.expand().expand()
-
-    print ast.expand().simplify()
+    print 'degree:', ast.degree()
+    print 'degree of x:', ast.degree('x')
 
     print 'ast'
     t = ast
     print t
+    print repr(t)
     print
     print 'ast.simplify()'
     t = ast.simplify()
     print t
+    print repr(t)
     print
     print 'ast.expand()'
     t = ast.expand()
     print t
+    print repr(t)
     print
     print 'ast.expand().simplify()'
     t = ast.expand().simplify()
@@ -706,11 +824,23 @@ if ast:
     print
 
     eq = ast.simplify().expand()
-    var = eq.variables().pop()
+    print repr(eq)
+    print eq
 
-    sol = eq.solve(var)
-    print 'solve on', var, '=', str(sol)
-    print 'solve on', var, '=', str(sol.expand() if sol else None)
+
+    vars = eq.variables()
+    if vars:
+        var = eq.variables().pop()
+
+        sol = eq.solve(var)
+        if sol:
+            print 'solve on', str(sol)
+            print 'solve on', str(sol[1]), '=', str(sol[0])
+            print 'solve on', str(sol[1]), '=', str(sol[0].simplify())
+            print 'solve on', str(sol[1]), '=', str(sol[0].expand())
+            print 'solve on', str(sol[1]), '=', repr(sol[0].expand())
+        else:
+            print 'cannot solve on', var
 
     print
     print ast.simplify().expand().simplify()
