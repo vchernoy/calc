@@ -2,6 +2,7 @@ import string
 import random
 from fractions import gcd
 
+
 class Token:
     l_paren = '('
     r_paren = ')'
@@ -31,8 +32,9 @@ class Token:
 
         if self.typ == Token.id:
             return self.lit
-        
+
         return self.typ
+
 
 class Tokenizer:
     def __init__(self):
@@ -41,7 +43,8 @@ class Tokenizer:
     def tokenize(self, reader):
         while reader.has_next():
             loc = reader.location()
-            if reader.expected_next([Token.l_paren, Token.r_paren, Token.equal, Token.add, Token.sub, Token.mul, Token.div]):
+            if reader.expected_next(
+                    [Token.l_paren, Token.r_paren, Token.equal, Token.add, Token.sub, Token.mul, Token.div]):
                 tok = reader.move_next()
                 yield Token(loc, tok)
             elif reader.expected_next(string.digits):
@@ -67,9 +70,10 @@ class Tokenizer:
 
                     else:
                         if reader.has_next():
-                            yield Token(reader.location(), Token.error, err = 'expected digit, while received: ' + reader.look_next())
+                            yield Token(reader.location(), Token.error,
+                                        err='expected digit, while received: ' + reader.look_next())
                         else:
-                            yield Token(reader.location(), Token.error, err = 'expected digit, while reached: EOL')
+                            yield Token(reader.location(), Token.error, err='expected digit, while reached: EOL')
 
                         return
 
@@ -89,10 +93,11 @@ class Tokenizer:
                 reader.move_next()
 
             else:
-                yield Token(loc, Token.error, err = 'unexpected character: ' + reader.look_next())
+                yield Token(loc, Token.error, err='unexpected character: ' + reader.look_next())
                 return
 
         yield Token(reader.location(), Token.eol)
+
 
 class Reader:
     def __init__(self, source):
@@ -106,7 +111,7 @@ class Reader:
         if not self.has_next():
             raise Exception("no input")
 
-        return self.src[self.loc+1]
+        return self.src[self.loc + 1]
 
     def move_next(self):
         tok = self.look_next()
@@ -129,12 +134,13 @@ class TokenReader:
         if self.loc + 1 >= len(self.src):
             raise Exception("no input")
 
-        return self.src[self.loc+1]
+        return self.src[self.loc + 1]
 
     def move_next(self):
         tok = self.look_next()
         self.loc += 1
         return tok
+
 
 def incby(acc_vars, added_vars):
     if not added_vars:
@@ -144,6 +150,7 @@ def incby(acc_vars, added_vars):
         acc_vars[var] = acc_vars.setdefault(var, 0) + power
         if acc_vars[var] == 0:
             del acc_vars[var]
+
 
 class Node:
     add = '+'
@@ -184,7 +191,7 @@ class Node:
 
     @staticmethod
     def variable(name):
-        return Node(operation=Node.one, vars={name:1})
+        return Node(operation=Node.one, vars={name: 1})
 
     @staticmethod
     def addition(nodes, vars=None, coefficient=1):
@@ -201,7 +208,8 @@ class Node:
         if len(nodes) == 1:
             n = nodes[0]
             incby(res_vars, n.vars)
-            return Node.new(operation=n.operation, coefficient=coefficient*n.coefficient, vars=res_vars, operands=n.operands)
+            return Node.new(operation=n.operation, coefficient=coefficient * n.coefficient, vars=res_vars,
+                            operands=n.operands)
 
         return Node(operation=Node.add, operands=nodes, vars=vars, coefficient=coefficient)
 
@@ -220,13 +228,15 @@ class Node:
         if len(nodes) == 1:
             n = nodes[0]
             incby(res_vars, n.vars)
-            return Node.new(operation=n.operation, coefficient=coefficient*n.coefficient, vars=res_vars, operands=n.operands)
+            return Node.new(operation=n.operation, coefficient=coefficient * n.coefficient, vars=res_vars,
+                            operands=n.operands)
 
         return Node(operation=Node.mul, operands=nodes, vars=vars, coefficient=coefficient)
 
     @staticmethod
     def negative(node):
-        return Node.new(operation=node.operation, coefficient=-node.coefficient, operands=node.operands, vars=node.vars) if node else None
+        return Node.new(operation=node.operation, coefficient=-node.coefficient, operands=node.operands,
+                        vars=node.vars) if node else None
 
     @staticmethod
     def inverse(node, vars=None, coefficient=1):
@@ -248,9 +258,10 @@ class Node:
                 if inv_coefficient == 1:
                     return Node.term(vars=vars, coefficient=res_coefficient)
 
-                return Node(operation=Node.inv, operands=[Node.number(inv_coefficient)], vars=vars, coefficient=res_coefficient)
+                return Node(operation=Node.inv, operands=[Node.number(inv_coefficient)], vars=vars,
+                            coefficient=res_coefficient)
 
-            return Node.term(vars=vars, coefficient=float(coefficient)/node.coefficient)
+            return Node.term(vars=vars, coefficient=float(coefficient) / node.coefficient)
 
         return Node(operation=Node.inv, operands=[node], vars=vars, coefficient=coefficient)
 
@@ -284,12 +295,14 @@ class Node:
         return ','.join([str(v) for v in sorted(self.vars.items())])
 
     def __repr__(self):
-        return '[' + self.operation + ',' + str(self.coefficient) + ',' + str(self.vars) + ',' + ','.join([repr(o) for o in self.operands]) + ']'
+        return '[' + self.operation + ',' + str(self.coefficient) + ',' + str(self.vars) + ',' + ','.join(
+            [repr(o) for o in self.operands]) + ']'
 
-    def to_str(self, in_parenthesis = False):
+    def to_str(self, in_parenthesis=False):
         s_vars = '*'.join(['*'.join([v[0]] * v[1]) for v in sorted(self.vars.items())])
 
-        around_parenthesis = in_parenthesis and ((self.operation != Node.one) or ((self.coefficient != 1) and self.vars) or (self.coefficient < 0))
+        around_parenthesis = in_parenthesis and (
+            (self.operation != Node.one) or ((self.coefficient != 1) and self.vars) or (self.coefficient < 0))
 
         res = ''
         if self.operation == Node.one:
@@ -386,7 +399,7 @@ class Node:
             for d, l in sorted(pos_degree.items()):
                 terms += l
 
-            return Node.addition(terms+neg_degree, coefficient=self.coefficient, vars=self.vars)
+            return Node.addition(terms + neg_degree, coefficient=self.coefficient, vars=self.vars)
 
         if self.operation == Node.mul:
             evaluated0 = [n.simplify() for n in self.operands]
@@ -425,7 +438,7 @@ class Node:
 
                 if n.operation == Node.inv:
                     t = n.operands[0]
-                    incby(res_vars, {v:-p for (v,p) in t.vars.iteritems()})
+                    incby(res_vars, {v: -p for (v, p) in t.vars.iteritems()})
                     inv_coefficient *= t.coefficient
                     if t.operation != Node.one:
                         evaluated3.append(Node.inverse(Node.new(operation=t.operation, operands=t.operands)))
@@ -440,8 +453,8 @@ class Node:
 
                 evaluated.append(n)
 
-            pos_vars = {v:p for (v,p) in res_vars.iteritems() if p > 0}
-            inv_vars = {v:-p for (v,p) in res_vars.iteritems() if p < 0}
+            pos_vars = {v: p for (v, p) in res_vars.iteritems() if p > 0}
+            inv_vars = {v: -p for (v, p) in res_vars.iteritems() if p < 0}
 
             n = Node.inverse(node=Node.term(inv_coefficient, inv_vars), vars=pos_vars, coefficient=res_coefficient)
             if (n.operation != Node.one) or (n.coefficient != 1) or n.vars:
@@ -454,17 +467,17 @@ class Node:
 
             res_vars = {}
             incby(res_vars, self.vars)
-            incby(res_vars, {v:-p for (v, p) in evaluated.vars.iteritems()})
+            incby(res_vars, {v: -p for (v, p) in evaluated.vars.iteritems()})
 
-            pos_vars = {v:p for (v,p) in res_vars.iteritems() if p > 0}
-            inv_vars = {v:-p for (v,p) in res_vars.iteritems() if p < 0}
+            pos_vars = {v: p for (v, p) in res_vars.iteritems() if p > 0}
+            inv_vars = {v: -p for (v, p) in res_vars.iteritems() if p < 0}
 
             # 2x*x / node
             # node = 5a*b / n
             # 2x*x / 5a*b * n
 
             if evaluated.operation == Node.one:
-                return  Node.inverse(
+                return Node.inverse(
                     Node.term(evaluated.coefficient, inv_vars),
                     coefficient=self.coefficient,
                     vars=pos_vars
@@ -472,7 +485,7 @@ class Node:
 
             if evaluated.operation == Node.inv:
                 return Node.multiplication(
-                    nodes = [
+                    nodes=[
                         Node.inverse(
                             Node.term(evaluated.coefficient, inv_vars),
                             coefficient=self.coefficient,
@@ -486,17 +499,18 @@ class Node:
                 inversed_terms = [Node.inverse(t) for t in evaluated.operands if t.operation == Node.inv]
                 other_terms = [t for t in evaluated.operands if t.operation != Node.inv]
                 return Node.multiplication(
-                    nodes = [
-                        Node.inverse(
-                            Node.multiplication(other_terms, coefficient=evaluated.coefficient, vars=inv_vars),
-                            coefficient=self.coefficient,
-                            vars=pos_vars
-                        )
-                    ] + inversed_terms
+                    nodes=[
+                              Node.inverse(
+                                  Node.multiplication(other_terms, coefficient=evaluated.coefficient, vars=inv_vars),
+                                  coefficient=self.coefficient,
+                                  vars=pos_vars
+                              )
+                          ] + inversed_terms
                 ).simplify()
 
             return Node.inverse(
-                Node.new(operation=evaluated.operation, vars=inv_vars, operands=evaluated.operands, coefficient=evaluated.coefficient).simplify(),
+                Node.new(operation=evaluated.operation, vars=inv_vars, operands=evaluated.operands,
+                         coefficient=evaluated.coefficient).simplify(),
                 coefficient=self.coefficient,
                 vars=pos_vars
             )
@@ -532,7 +546,7 @@ class Node:
                     res2 = []
                     for t1 in res:
                         for t2 in term.operands:
-                            res2.append(Node.multiplication(nodes=[t1,t2]).simplify())
+                            res2.append(Node.multiplication(nodes=[t1, t2]).simplify())
 
                     res = Node.addition(nodes=res2).simplify().operands
 
@@ -566,7 +580,7 @@ class Node:
         if self.operation != Node.add:
             assert False
 
-        if self.vars.get(var,0) != 0:
+        if self.vars.get(var, 0) != 0:
             return None
 
         var_terms = [t for t in self.operands if var in t.variables()]
@@ -591,8 +605,10 @@ class Node:
         for term in var_terms:
             reduced_vars = {}
             incby(reduced_vars, term.vars)
-            incby(reduced_vars, {var:-power})
-            reduced_var_terms.append(Node.new(operation=term.operation, operands=term.operands, coefficient=term.coefficient, vars=reduced_vars))
+            incby(reduced_vars, {var: -power})
+            reduced_var_terms.append(
+                Node.new(operation=term.operation, operands=term.operands, coefficient=term.coefficient,
+                         vars=reduced_vars))
 
         term1 = Node.negative(Node.addition(non_var_terms)).expand()
         term2 = Node.inverse(Node.addition(reduced_var_terms))
@@ -602,7 +618,7 @@ class Node:
         # 2x + x*a == -(5y + 3z + 1)
         return (
             Node.multiplication([term1, term2]),
-            Node.term(coefficient=1, vars={var:power})
+            Node.term(coefficient=1, vars={var: power})
         )
 
         # return Node.multiplication([Node.negative(self.operands[0]), Node.inverse(self.operands[1], vars={var:self.operands[-1].vars[var]})]).simplify()
@@ -630,7 +646,7 @@ class Node:
             for n in scalars:
                 val *= n.coefficient
 
-            return Node.multiplication(non_scalars, coefficient=self.coefficient*val, vars=self.vars)
+            return Node.multiplication(non_scalars, coefficient=self.coefficient * val, vars=self.vars)
 
         if self.operation == Node.inv:
             if scalars:
@@ -657,7 +673,7 @@ class Node:
                 pow = self.vars[var]
                 res_coefficient *= val ** pow
 
-        res_var = {v:p for (v,p) in self.vars.iteritems() if v not in assignment}
+        res_var = {v: p for (v, p) in self.vars.iteritems() if v not in assignment}
 
         return Node.new(operation=self.operation, operands=evaluated, coefficient=res_coefficient, vars=res_var)
 
@@ -670,7 +686,7 @@ class Node:
                 for i in xrange(pow):
                     nodes.append(val)
 
-        res_var = {v:p for (v,p) in self.vars.iteritems() if v not in assignment}
+        res_var = {v: p for (v, p) in self.vars.iteritems() if v not in assignment}
 
         node = Node.new(operation=self.operation, operands=evaluated, coefficient=self.coefficient, vars=res_var)
         return Node.multiplication(nodes + [node])
@@ -710,6 +726,7 @@ class Node:
         if self.operation == Node.inv:
             return self.operands[0].is_number()
 
+
 class Error:
     def __init__(self, loc, msg):
         self.loc = loc
@@ -720,6 +737,7 @@ class Error:
 
     def __repr__(self):
         return 'error @ {}: {}'.format(self.loc, self.msg)
+
 
 class Parser:
     def __init__(self):
@@ -733,12 +751,14 @@ class Parser:
             reader.move_next()
             tree2 = self.parse_expr(reader, errors)
             if reader.look_next().typ != Token.eol:
-                errors.append(Error(reader.look_next().loc, 'expected EOL, received token \'{}\''.format(reader.look_next())))
+                errors.append(
+                    Error(reader.look_next().loc, 'expected EOL, received token \'{}\''.format(reader.look_next())))
 
             return Node.addition([tree, Node.negative(tree2)])
 
         if reader.look_next().typ != Token.eol:
-            errors.append(Error(reader.look_next().loc, 'expected \'=\' or EOL, received token \'{}\''.format(reader.look_next())))
+            errors.append(Error(reader.look_next().loc,
+                                'expected \'=\' or EOL, received token \'{}\''.format(reader.look_next())))
 
         return tree
 
@@ -806,7 +826,8 @@ class Parser:
             elif tok.typ == Token.div:
                 operation = Node.inv
                 reader.move_next()
-            elif (prev_tok.typ == Token.number) and (tok.typ in [Token.id, Token.l_paren]) and (operation in [None, Node.mul]):
+            elif (prev_tok.typ == Token.number) and (tok.typ in [Token.id, Token.l_paren]) and (
+                        operation in [None, Node.mul]):
                 operation = Node.mul
             else:
                 break
@@ -817,22 +838,26 @@ class Parser:
         # E := '(' E ')'
 
         if reader.look_next().typ != Token.l_paren:
-            errors.append(Error(reader.look_next().loc, 'expected \'(\' or EOL, received token \'{}\''.format(reader.look_next())))
+            errors.append(Error(reader.look_next().loc,
+                                'expected \'(\' or EOL, received token \'{}\''.format(reader.look_next())))
             return None
 
         reader.move_next()
         tree = self.parse_expr(reader, errors)
         if reader.look_next().typ != Token.r_paren:
-            errors.append(Error(reader.look_next().loc, 'expected \')\' or EOL, received token \'{}\''.format(reader.look_next())))
+            errors.append(Error(reader.look_next().loc,
+                                'expected \')\' or EOL, received token \'{}\''.format(reader.look_next())))
             return tree
 
         reader.move_next()
         return tree
 
+
 def parse(s, errors):
     toks = Tokenizer().tokenize(Reader(s))
     tok_reader = TokenReader([t for t in toks])
     return Parser().parse(tok_reader, errors)
+
 
 # inp = '(-2 + 3.5 + x + abc) - 2 - 4'
 # inp = '2 * 3 + 5z*(2+3x) + 5(2+3)/4*x + 2/3'
@@ -937,7 +962,7 @@ while True:
 
                 if sol[1].degree() == 1:
                     print 'checking the solution...'
-                    subs_ast = simplified.subse({var:sol[0]})
+                    subs_ast = simplified.subse({var: sol[0]})
                     # print 'substituted the solution to the expression: ', subs_ast
                     subs_attempts = [
                         subs_ast.simplify().evalf(),
@@ -953,7 +978,7 @@ while True:
                     elif simplified_subs.variables():
                         free_vars = simplified_subs.variables()
                         print 'there are still free variables, let\'s generate random assignments for them...'
-                        assignment = {v:random.uniform(-1000, 1000) for v in free_vars}
+                        assignment = {v: random.uniform(-1000, 1000) for v in free_vars}
                         final_ast = simplified_subs.subs(assignment)
                         final_attempts = [
                             final_ast.simplify().evalf(),
