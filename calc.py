@@ -1,6 +1,7 @@
 import string
 import random
-from fractions import gcd
+import math
+import fractions
 
 
 class Token:
@@ -188,6 +189,7 @@ class Node:
     mul = '*'
     inv = '/'
     one = '1'
+    log = 'log'
 
     @staticmethod
     def new(operation, coefficient=1, vars=None, operands=None):
@@ -196,13 +198,16 @@ class Node:
             return Node.term(coefficient, vars)
 
         if operation == Node.add:
-            return Node.addition(operands, vars=vars, coefficient=coefficient)
+            return Node.addition(operands, vars, coefficient)
 
         if operation == Node.mul:
-            return Node.multiplication(operands, vars=vars, coefficient=coefficient)
+            return Node.multiplication(operands, vars, coefficient)
 
         if operation == Node.inv:
-            return Node.inverse(operands[0], vars=vars, coefficient=coefficient)
+            return Node.inverse(operands[0], vars, coefficient)
+
+        if operation == Node.log:
+            return Node.logarithm(operands[0], vars, coefficient)
 
         assert False
 
@@ -280,7 +285,7 @@ class Node:
 
         if (node.coefficient != 0) and (not node.vars) and (node.operation == Node.one):
             if (type(coefficient) == int) and (type(node.coefficient) == int):
-                gcd_val = gcd(coefficient, node.coefficient)
+                gcd_val = fractions.gcd(coefficient, node.coefficient)
                 res_coefficient = coefficient / gcd_val
                 inv_coefficient = node.coefficient / gcd_val
                 if inv_coefficient < 0:
@@ -297,6 +302,13 @@ class Node:
 
         return Node(operation=Node.inv, operands=[node], vars=vars, coefficient=coefficient)
 
+    @staticmethod
+    def logarithm(node, vars=None, coefficient=1):
+        if not node:
+            return Node.term(coefficient=coefficient, vars=vars)
+
+        return Node(operation=Node.log, operands=[node], vars=vars, coefficient=coefficient)
+
     def __init__(self, operation, coefficient=1, vars=None, operands=None):
         self.vars = {}
         incby(self.vars, vars)
@@ -305,7 +317,7 @@ class Node:
         self.operation = operation
         self.operands = operands if operands else []
 
-        assert self.operation in [Node.one, Node.mul, Node.add, Node.inv]
+        assert self.operation in [Node.one, Node.mul, Node.add, Node.inv, Node.log]
         assert type(self.vars) == dict
         assert type(self.operands) == list
         assert type(self.coefficient) in [float, int, long]
@@ -314,7 +326,7 @@ class Node:
             assert type(self.operands) == list
             assert len(self.operands) >= 2
 
-        if self.operation in [Node.inv]:
+        if self.operation in [Node.inv, Node.log]:
             assert len(self.operands) == 1
 
         if self.operation in [Node.one]:
@@ -384,6 +396,17 @@ class Node:
                 res = s_vars
 
             res += '/' + self.operands[0].to_str(True)
+        elif self.operation == Node.log:
+            if self.coefficient == -1:
+                res = '-'
+            elif self.coefficient != 1:
+                res = str(self.coefficient)
+
+            if self.vars:
+                res += s_vars + '*'
+
+            res += 'log ' + self.operands[0].to_str(True)
+
         else:
             assert False
 
@@ -464,7 +487,7 @@ class Node:
             evaluated3 = [n for n in evaluated2 if n.operation != Node.inv]
             inv_coefficient = 1
             for n in evaluated2:
-                assert n.operation in [Node.inv, Node.add]
+                assert n.operation in [Node.inv, Node.add, Node.log]
                 assert n.coefficient == 1
                 assert not n.vars
 
@@ -479,7 +502,7 @@ class Node:
 
             evaluated = []
             for n in evaluated3:
-                assert n.operation in [Node.inv, Node.add]
+                assert n.operation in [Node.inv, Node.add, Node.log]
                 assert n.coefficient == 1
                 assert not n.vars
 
@@ -489,10 +512,17 @@ class Node:
             inv_vars = {v: -p for (v, p) in res_vars.iteritems() if p < 0}
 
             n = Node.inverse(node=Node.term(inv_coefficient, inv_vars), vars=pos_vars, coefficient=res_coefficient)
-            if (n.operation != Node.one) or (n.coefficient != 1) or n.vars:
-                evaluated += [n]
+            # if (n.operation != Node.one) or (n.coefficient != 1) or n.vars:
+            #     evaluated += [n]
+            #
+            # return Node.multiplication(evaluated)
 
+            if n.operation == Node.one:
+                return Node.multiplication(evaluated, coefficient=n.coefficient, vars=n.vars)
+
+            evaluated += [n]
             return Node.multiplication(evaluated)
+
 
         if self.operation == Node.inv:
             evaluated = self.operands[0].simplify()
@@ -547,6 +577,9 @@ class Node:
                 vars=pos_vars
             )
 
+        if self.operation == Node.log:
+            return self
+
         assert False
 
     def expand(self):
@@ -587,6 +620,9 @@ class Node:
         if self.operation == Node.inv:
             return self
 
+        if self.operation == Node.log:
+            return self
+
         assert False
 
     def solve(self, var):
@@ -609,14 +645,25 @@ class Node:
 
             return (Node.number(0), Node.variable(var))
 
+        if self.operation == Node.log:
+            if var in self.operands[0].variables():
+                return None
+
+            return (Node.number(0), Node.variable(var))
+
         if self.operation != Node.add:
             assert False
+
+        print repr(self)
 
         if self.vars.get(var, 0) != 0:
             return None
 
         var_terms = [t for t in self.operands if var in t.variables()]
         non_var_terms = [t for t in self.operands if var not in t.variables()]
+
+        print var_terms
+
         if not var_terms:
             return None
 
@@ -695,6 +742,14 @@ class Node:
 
             return Node.inverse(non_scalars[0], coefficient=self.coefficient, vars=self.vars)
 
+        if self.operation == Node.log:
+            if scalars:
+                val = self.coefficient * math.log(scalars[0].coefficient)
+
+                return Node.term(coefficient=val, vars=self.vars)
+
+            return Node.logarithm(non_scalars[0], coefficient=self.coefficient, vars=self.vars)
+
         assert False
 
     def subs(self, assignment):
@@ -737,13 +792,16 @@ class Node:
             return d
 
         if self.operation == Node.inv:
-            return -self.operands[0].degree(var)
+            return d - self.operands[0].degree(var)
 
         if self.operation == Node.add:
-            return max([n.degree(var) for n in self.operands])
+            return d + max([n.degree(var) for n in self.operands])
 
         if self.operation == Node.mul:
-            return sum([n.degree(var) for n in self.operands])
+            return d + sum([n.degree(var) for n in self.operands])
+
+        if self.operation == Node.log:
+            return d
 
     def is_number(self):
         return (self.operation == Node.one) and not self.vars
@@ -758,6 +816,10 @@ class Node:
         if self.operation == Node.inv:
             return self.operands[0].is_number()
 
+        if self.operation == Node.log:
+            return self.operands[0].is_number()
+
+        return False
 
 class Error:
     def __init__(self, expected_toks, received_tok):
@@ -771,8 +833,6 @@ class Error:
         else:
             self.msg = "error @ {}: unexpected token: {}, expected tokens: {}".format(
                 self.loc, received_tok, ",".join(expected_toks))
-
-
 
     def __str__(self):
         return repr(self)
@@ -852,8 +912,12 @@ class Parser:
 
             prev_tok = reader.look_next()
             if prev_tok.typ == Token.id:
-                tree = Node.variable(prev_tok.lit)
                 reader.move_next()
+                if prev_tok.lit == Node.log:
+                    tree = self.parse_product(reader, errors)
+                    tree = Node.logarithm(tree)
+                else:
+                    tree = Node.variable(prev_tok.lit)
             elif prev_tok.typ == Token.number:
                 tree = Node.number(prev_tok.number)
                 reader.move_next()
@@ -1018,9 +1082,6 @@ while True:
 
             sols = []
             sol = simplified.solve(var)
-            print sol[0], sol[1]
-            print sol[0].simplify()
-            print sol[0].expand()
             if sol:
                 sols.append(sol)
                 sols.append((sol[0].simplify(), sol[1]))
@@ -1051,6 +1112,7 @@ while True:
                         free_vars = simplified_subs.variables()
                         print 'there are still free variables, let\'s generate random assignments for them...'
                         assignment = {v: random.uniform(-1000, 1000) for v in free_vars}
+                        print 'the generated assignment to be substituted is', assignment
                         final_ast = simplified_subs.subs(assignment)
                         final_attempts = [
                             final_ast.simplify().evalf(),
