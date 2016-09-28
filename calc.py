@@ -43,91 +43,87 @@ class Token:
         return self.typ
 
 
-class Tokenizer:
-    def __init__(self):
-        pass
+def tokenize(reader):
+    while reader.has_next():
+        loc = reader.location()
+        if reader.expected_next(
+                [Token.l_paren, Token.r_paren, Token.equal, Token.add, Token.sub, Token.mul, Token.div]):
+            tok = reader.move_next()
+            yield Token(loc, tok)
+        elif reader.expected_next(string.digits):
+            is_int = True
 
-    def tokenize(self, reader):
-        while reader.has_next():
-            loc = reader.location()
-            if reader.expected_next(
-                    [Token.l_paren, Token.r_paren, Token.equal, Token.add, Token.sub, Token.mul, Token.div]):
-                tok = reader.move_next()
-                yield Token(loc, tok)
-            elif reader.expected_next(string.digits):
-                is_int = True
+            num = reader.move_next()
+            while reader.expected_next(string.digits):
+                num += reader.move_next()
 
-                num = reader.move_next()
+            if reader.expected_next('.'):
+                is_int = False
+                num += reader.move_next()
+
                 while reader.expected_next(string.digits):
                     num += reader.move_next()
 
-                if reader.expected_next('.'):
-                    is_int = False
+            if reader.expected_next('Ee'):
+                is_int = False
+                num += reader.move_next()
+                if reader.expected_next([Token.add, Token.sub]):
                     num += reader.move_next()
 
+                if reader.expected_next(string.digits):
+                    num += reader.move_next()
                     while reader.expected_next(string.digits):
                         num += reader.move_next()
 
-                if reader.expected_next('Ee'):
-                    is_int = False
-                    num += reader.move_next()
-                    if reader.expected_next([Token.add, Token.sub]):
-                        num += reader.move_next()
+                else:
+                    if reader.has_next():
+                        yield Token(reader.location(), Token.error,
+                                    err='expected digit, while received: ' + reader.look_next(),
+                                    expected_chars=['0-9'],
+                                    parsed_chars=num,
+                                    next_chars=reader.look_next())
 
-                    if reader.expected_next(string.digits):
-                        num += reader.move_next()
-                        while reader.expected_next(string.digits):
-                            num += reader.move_next()
-
+                        reader.move_next()
                     else:
-                        if reader.has_next():
-                            yield Token(reader.location(), Token.error,
-                                        err='expected digit, while received: ' + reader.look_next(),
-                                        expected_chars=['0-9'],
-                                        parsed_chars=num,
-                                        next_chars=reader.look_next())
+                        yield Token(reader.location(), Token.error,
+                                    err='expected digit, while reached: EOL',
+                                    expected_chars=['0-9'],
+                                    parsed_chars=num,
+                                    next_chars=Token.eol)
 
-                            reader.move_next()
-                        else:
-                            yield Token(reader.location(), Token.error,
-                                        err='expected digit, while reached: EOL',
-                                        expected_chars=['0-9'],
-                                        parsed_chars=num,
-                                        next_chars=Token.eol)
+                    continue
 
-                        continue
-
-                try:
-                    if is_int:
-                        yield Token(loc, Token.number, num=int(num))
-                    else:
-                        yield Token(loc, Token.number, num=float(num))
-                except ValueError:
-                    yield Token(loc, Token.error,
-                                err='unexpected error in parsing number',
-                                expected_chars=['(0-9)+[.(0-9)*][[E|e][+|-](0-9)+]'],
-                                parsed_chars=num,
-                                next_chars=reader.look_next())
-
-            elif reader.expected_next(string.ascii_lowercase):
-                lit = reader.move_next()
-                while reader.expected_next(string.ascii_lowercase):
-                    lit += reader.move_next()
-
-                yield Token(loc, Token.id, lit)
-
-            elif reader.expected_next(' \t'):
-                reader.move_next()
-
-            else:
+            try:
+                if is_int:
+                    yield Token(loc, Token.number, num=int(num))
+                else:
+                    yield Token(loc, Token.number, num=float(num))
+            except ValueError:
                 yield Token(loc, Token.error,
-                            err='unexpected character: ' + reader.look_next(),
-                            expected_chars='(0-9)|(a-z)|(|)|+|-|*|/|=',
-                            parsed_chars='',
+                            err='unexpected error in parsing number',
+                            expected_chars=['(0-9)+[.(0-9)*][[E|e][+|-](0-9)+]'],
+                            parsed_chars=num,
                             next_chars=reader.look_next())
-                reader.move_next()
 
-        yield Token(reader.location(), Token.eol)
+        elif reader.expected_next(string.ascii_lowercase):
+            lit = reader.move_next()
+            while reader.expected_next(string.ascii_lowercase):
+                lit += reader.move_next()
+
+            yield Token(loc, Token.id, lit)
+
+        elif reader.expected_next(' \t'):
+            reader.move_next()
+
+        else:
+            yield Token(loc, Token.error,
+                        err='unexpected character: ' + reader.look_next(),
+                        expected_chars='(0-9)|(a-z)|(|)|+|-|*|/|=',
+                        parsed_chars='',
+                        next_chars=reader.look_next())
+            reader.move_next()
+
+    yield Token(reader.location(), Token.eol)
 
 
 class Reader:
@@ -834,6 +830,17 @@ class Error:
         return self.msg
 
 
+def find_expected(reader, expected_toks, errors):
+    if reader.look_next().typ not in expected_toks:
+        errors.append(
+            Error(expected_toks=expected_toks, received_tok=reader.look_next())
+        )
+        while (reader.look_next().typ != Token.eol) and reader.look_next().typ not in expected_toks:
+            reader.move_next()
+
+    return reader.look_next().typ in expected_toks
+
+
 class Parser:
     expr_paren_starts = {Token.l_paren}
     prod_starts = expr_paren_starts | {Token.number, Token.id}
@@ -850,11 +857,11 @@ class Parser:
         # EE := E [= E]
 
         tree = self.parse_expr(reader, errors)
-        if self.find_expected(reader, [Token.equal, Token.eol], errors):
+        if find_expected(reader, [Token.equal, Token.eol], errors):
             if reader.look_next().typ == Token.equal:
                 reader.move_next()
                 tree2 = self.parse_expr(reader, errors)
-                self.find_expected(reader, [Token.eol], errors)
+                find_expected(reader, [Token.eol], errors)
 
                 tree = Node.addition([tree, Node.negative(tree2)])
 
@@ -868,7 +875,7 @@ class Parser:
     def parse_sum(self, reader, errors):
         # S := ['+'|'-'] P ('+'|'-' P)*
 
-        if not self.find_expected(reader, Parser.sum_starts, errors):
+        if not find_expected(reader, Parser.sum_starts, errors):
             return None
 
         neg = reader.look_next().typ == Token.sub
@@ -881,7 +888,7 @@ class Parser:
 
         operands = [tree]
 
-        if self.find_expected(reader, Parser.all | {Token.eol}, errors):
+        if find_expected(reader, Parser.all | {Token.eol}, errors):
             while reader.look_next().typ in [Token.add, Token.sub]:
                 neg = reader.look_next().typ == Token.sub
                 reader.move_next()
@@ -901,7 +908,7 @@ class Parser:
         operation = None
         operands = []
         while True:
-            if not self.find_expected(reader, Parser.prod_starts, errors):
+            if not find_expected(reader, Parser.prod_starts, errors):
                 break
 
             prev_tok = reader.look_next()
@@ -928,11 +935,10 @@ class Parser:
                 operands.append(tree)
 
             if (prev_tok.typ == Token.number) and (operation in [None, Node.mul]):
-                if not self.find_expected(reader, Parser.all - {Token.number} | {Token.eol}, errors):
+                if not find_expected(reader, Parser.all - {Token.number} | {Token.eol}, errors):
                     break
             else:
-                if not self.find_expected(reader, Parser.all - {Token.number, Token.id, Token.l_paren} | {Token.eol},
-                                          errors):
+                if not find_expected(reader, Parser.all - {Token.number, Token.id, Token.l_paren} | {Token.eol}, errors):
                     break
 
             tok = reader.look_next()
@@ -942,8 +948,7 @@ class Parser:
             elif tok.typ == Token.div:
                 operation = Node.inv
                 reader.move_next()
-            elif (prev_tok.typ == Token.number) and (tok.typ in [Token.id, Token.l_paren]) and \
-                    (operation in [None, Node.mul]):
+            elif (prev_tok.typ == Token.number) and (tok.typ in [Token.id, Token.l_paren]) and (operation in [None, Node.mul]):
                 operation = Node.mul
             else:
                 break
@@ -953,26 +958,16 @@ class Parser:
     def parse_expr_in_parenthesis(self, reader, errors):
         # E := '(' E ')'
 
-        if not self.find_expected(reader, Parser.expr_paren_starts, errors):
+        if not find_expected(reader, Parser.expr_paren_starts, errors):
             return None
 
         reader.move_next()
         tree = self.parse_expr(reader, errors)
 
-        if self.find_expected(reader, [Token.r_paren], errors):
+        if find_expected(reader, [Token.r_paren], errors):
             reader.move_next()
 
         return tree
-
-    def find_expected(self, reader, expected_toks, errors):
-        if reader.look_next().typ not in expected_toks:
-            errors.append(
-                Error(expected_toks=expected_toks, received_tok=reader.look_next())
-            )
-            while (reader.look_next().typ != Token.eol) and reader.look_next().typ not in expected_toks:
-                reader.move_next()
-
-        return reader.look_next().typ in expected_toks
 
 
 # inp = '(-2 + 3.5 + x + abc) - 2 - 4'
@@ -1023,13 +1018,12 @@ class Parser:
 # inp = 'x  = 2/2'
 # inp = '1 * 1'
 
-tokenizer = Tokenizer()
 parser = Parser()
 
 n_line = 1
 while True:
     inp = input('input ' + str(n_line) + ' > ')
-    toks = tokenizer.tokenize(Reader(inp))
+    toks = tokenize(Reader(inp))
     tok_list = [t for t in toks]
     if (len(tok_list) == 1) and (tok_list[0].typ == Token.eol):
         break
