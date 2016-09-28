@@ -1,7 +1,6 @@
 import string
 import random
 import math
-import fractions
 
 
 class Token:
@@ -17,7 +16,7 @@ class Token:
     error = 'err'
     eol = 'eol'
 
-    def __init__(self, loc, typ, lit=None, num=None, err=None, expected_chars = None, parsed_chars=None, next_chars=None):
+    def __init__(self, loc, typ, lit=None, num=None, err=None, expected_chars=None, parsed_chars=None, next_chars=None):
         self.loc = loc
         self.typ = typ
         self.lit = lit
@@ -110,9 +109,9 @@ class Tokenizer:
                                 parsed_chars=num,
                                 next_chars=reader.look_next())
 
-            elif reader.expected_next(string.letters):
+            elif reader.expected_next(string.ascii_lowercase):
                 lit = reader.move_next()
-                while reader.expected_next(string.letters):
+                while reader.expected_next(string.ascii_lowercase):
                     lit += reader.move_next()
 
                 yield Token(loc, Token.id, lit)
@@ -178,7 +177,7 @@ def incby(acc_vars, added_vars):
     if not added_vars:
         return
 
-    for (var, power) in added_vars.iteritems():
+    for (var, power) in added_vars.items():
         acc_vars[var] = acc_vars.setdefault(var, 0) + power
         if acc_vars[var] == 0:
             del acc_vars[var]
@@ -256,7 +255,7 @@ class Node:
 
         nodes = [n for n in nodes if n]
         if not nodes:
-            #return None
+            # return None
             return Node.term(coefficient=coefficient, vars=vars)
 
         res_vars = {}
@@ -285,7 +284,7 @@ class Node:
 
         if (node.coefficient != 0) and (not node.vars) and (node.operation == Node.one):
             if (type(coefficient) == int) and (type(node.coefficient) == int):
-                gcd_val = fractions.gcd(coefficient, node.coefficient)
+                gcd_val = math.gcd(coefficient, node.coefficient)
                 res_coefficient = coefficient / gcd_val
                 inv_coefficient = node.coefficient / gcd_val
                 if inv_coefficient < 0:
@@ -320,7 +319,7 @@ class Node:
         assert self.operation in [Node.one, Node.mul, Node.add, Node.inv, Node.log]
         assert type(self.vars) == dict
         assert type(self.operands) == list
-        assert type(self.coefficient) in [float, int, long]
+        assert type(self.coefficient) in [float, int]
 
         if self.operation in [Node.add, Node.mul]:
             assert type(self.operands) == list
@@ -442,7 +441,7 @@ class Node:
                 if d[k].coefficient == 0:
                     del d[k]
 
-            evaluated = d.values() + complex
+            evaluated = list(d.values()) + complex
 
             neg_degree = [t for t in evaluated if t.degree() < 0]
             pos_degree = {}
@@ -493,7 +492,7 @@ class Node:
 
                 if n.operation == Node.inv:
                     t = n.operands[0]
-                    incby(res_vars, {v: -p for (v, p) in t.vars.iteritems()})
+                    incby(res_vars, {v: -p for (v, p) in t.vars.items()})
                     inv_coefficient *= t.coefficient
                     if t.operation != Node.one:
                         evaluated3.append(Node.inverse(Node.new(operation=t.operation, operands=t.operands)))
@@ -508,8 +507,8 @@ class Node:
 
                 evaluated.append(n)
 
-            pos_vars = {v: p for (v, p) in res_vars.iteritems() if p > 0}
-            inv_vars = {v: -p for (v, p) in res_vars.iteritems() if p < 0}
+            pos_vars = {v: p for (v, p) in res_vars.items() if p > 0}
+            inv_vars = {v: -p for (v, p) in res_vars.items() if p < 0}
 
             n = Node.inverse(node=Node.term(inv_coefficient, inv_vars), vars=pos_vars, coefficient=res_coefficient)
             # if (n.operation != Node.one) or (n.coefficient != 1) or n.vars:
@@ -523,16 +522,15 @@ class Node:
             evaluated += [n]
             return Node.multiplication(evaluated)
 
-
         if self.operation == Node.inv:
             evaluated = self.operands[0].simplify()
 
             res_vars = {}
             incby(res_vars, self.vars)
-            incby(res_vars, {v: -p for (v, p) in evaluated.vars.iteritems()})
+            incby(res_vars, {v: -p for (v, p) in evaluated.vars.items()})
 
-            pos_vars = {v: p for (v, p) in res_vars.iteritems() if p > 0}
-            inv_vars = {v: -p for (v, p) in res_vars.iteritems() if p < 0}
+            pos_vars = {v: p for (v, p) in res_vars.items() if p > 0}
+            inv_vars = {v: -p for (v, p) in res_vars.items() if p < 0}
 
             # 2x*x / node
             # node = 5a*b / n
@@ -630,39 +628,35 @@ class Node:
             return None
 
         if self.operation == Node.one:
-            return (Node.number(0), Node.variable(var))
+            return Node.number(0), Node.variable(var)
 
         if self.operation == Node.inv:
             if var in self.operands[0].variables():
                 return None
 
-            return (Node.number(0), Node.variable(var))
+            return Node.number(0), Node.variable(var)
 
         if self.operation == Node.mul:
             for n in self.operands:
                 if var in n.variables():
                     return None
 
-            return (Node.number(0), Node.variable(var))
+            return Node.number(0), Node.variable(var)
 
         if self.operation == Node.log:
             if var in self.operands[0].variables():
                 return None
 
-            return (Node.number(0), Node.variable(var))
+            return Node.number(0), Node.variable(var)
 
         if self.operation != Node.add:
             assert False
-
-        print repr(self)
 
         if self.vars.get(var, 0) != 0:
             return None
 
         var_terms = [t for t in self.operands if var in t.variables()]
         non_var_terms = [t for t in self.operands if var not in t.variables()]
-
-        print var_terms
 
         if not var_terms:
             return None
@@ -700,8 +694,6 @@ class Node:
             Node.term(coefficient=1, vars={var: power})
         )
 
-        # return Node.multiplication([Node.negative(self.operands[0]), Node.inverse(self.operands[1], vars={var:self.operands[-1].vars[var]})]).simplify()
-
     def evalf(self):
         evaluated = [n.evalf() for n in self.operands]
         scalars = [n for n in evaluated if n.is_number()]
@@ -711,7 +703,7 @@ class Node:
             return self
 
         if self.operation == Node.add:
-            val = sum([n.coefficient for n in scalars] + [0])
+            val = sum([n.coefficient for n in scalars])
             terms = []
             if val != 0:
                 terms.append(Node.number(val))
@@ -755,25 +747,25 @@ class Node:
     def subs(self, assignment):
         evaluated = [n.subs(assignment) for n in self.operands]
         res_coefficient = self.coefficient
-        for var, val in assignment.iteritems():
+        for var, val in assignment.items():
             if var in self.vars:
                 pow = self.vars[var]
                 res_coefficient *= val ** pow
 
-        res_var = {v: p for (v, p) in self.vars.iteritems() if v not in assignment}
+        res_var = {v: p for (v, p) in self.vars.items() if v not in assignment}
 
         return Node.new(operation=self.operation, operands=evaluated, coefficient=res_coefficient, vars=res_var)
 
     def subse(self, assignment):
         evaluated = [n.subse(assignment) for n in self.operands]
         nodes = []
-        for var, val in assignment.iteritems():
+        for var, val in assignment.items():
             if var in self.vars:
                 pow = self.vars[var]
-                for i in xrange(pow):
+                for i in range(pow):
                     nodes.append(val)
 
-        res_var = {v: p for (v, p) in self.vars.iteritems() if v not in assignment}
+        res_var = {v: p for (v, p) in self.vars.items() if v not in assignment}
 
         node = Node.new(operation=self.operation, operands=evaluated, coefficient=self.coefficient, vars=res_var)
         return Node.multiplication(nodes + [node])
@@ -786,7 +778,7 @@ class Node:
         return res
 
     def degree(self, var=None):
-        d = self.vars.get(var, 0) if var else sum(self.vars.values() + [0])
+        d = self.vars.get(var, 0) if var else sum(self.vars.values())
 
         if self.operation == Node.one:
             return d
@@ -821,6 +813,7 @@ class Node:
 
         return False
 
+
 class Error:
     def __init__(self, expected_toks, received_tok):
         self.loc = received_tok.loc
@@ -847,7 +840,8 @@ class Parser:
     sum_starts = prod_starts | {Token.add, Token.sub}
     expr_starts = sum_starts
 
-    all = {Token.l_paren, Token.r_paren, Token.number, Token.id, Token.add, Token.sub, Token.mul, Token.div, Token.equal}
+    all = {Token.l_paren, Token.r_paren, Token.number, Token.id, Token.add, Token.sub, Token.mul, Token.div,
+           Token.equal}
 
     def __init__(self):
         pass
@@ -887,7 +881,7 @@ class Parser:
 
         operands = [tree]
 
-        if self.find_expected(reader, Parser.all|{Token.eol}, errors):
+        if self.find_expected(reader, Parser.all | {Token.eol}, errors):
             while reader.look_next().typ in [Token.add, Token.sub]:
                 neg = reader.look_next().typ == Token.sub
                 reader.move_next()
@@ -924,7 +918,7 @@ class Parser:
             elif prev_tok.typ == Token.l_paren:
                 tree = self.parse_expr_in_parenthesis(reader, errors)
             else:
-                assert False # never happens
+                assert False
 
             if operation == Node.mul:
                 operands.append(tree)
@@ -937,9 +931,9 @@ class Parser:
                 if not self.find_expected(reader, Parser.all - {Token.number} | {Token.eol}, errors):
                     break
             else:
-                if not self.find_expected(reader, Parser.all - {Token.number, Token.id, Token.l_paren} | {Token.eol}, errors):
+                if not self.find_expected(reader, Parser.all - {Token.number, Token.id, Token.l_paren} | {Token.eol},
+                                          errors):
                     break
-
 
             tok = reader.look_next()
             if tok.typ == Token.mul:
@@ -979,6 +973,7 @@ class Parser:
                 reader.move_next()
 
         return reader.look_next().typ in expected_toks
+
 
 # inp = '(-2 + 3.5 + x + abc) - 2 - 4'
 # inp = '2 * 3 + 5z*(2+3x) + 5(2+3)/4*x + 2/3'
@@ -1033,7 +1028,7 @@ parser = Parser()
 
 n_line = 1
 while True:
-    inp = raw_input('input ' + str(n_line) + ' > ')
+    inp = input('input ' + str(n_line) + ' > ')
     toks = tokenizer.tokenize(Reader(inp))
     tok_list = [t for t in toks]
     if (len(tok_list) == 1) and (tok_list[0].typ == Token.eol):
@@ -1044,20 +1039,20 @@ while True:
     ast = parser.parse(tok_reader, errors)
 
     if errors:
-        errors.sort(key=lambda err: err.loc)
-        buf = [' '] * (len(inp)+1)
+        errors.sort(key=lambda e: e.loc)
+        buf = [' '] * (len(inp) + 1)
         for err in errors:
             buf[err.loc] = '^'
             err_loc = err.loc
 
-        print inp
-        print ''.join(buf)
+        print(inp)
+        print(''.join(buf))
 
         for err in errors:
-            print err
+            print(err)
 
         if ast:
-            print 'parsed expression:', ast
+            print('parsed expression:', ast)
 
     if ast:
         attempts = [
@@ -1066,19 +1061,20 @@ while True:
             ast.simplify().expand().evalf(),
             ast.simplify().evalf().simplify()
         ]
-        simplified = sorted([(len(str(n)), n) for n in attempts])[0][1]
-        print 'simplified expression:', simplified
+        attempts.sort(key=lambda n: len(str(n)))
+        simplified = attempts[0]
+        print('simplified expression:', simplified)
 
         vars = simplified.variables()
 
         if vars:
-            print 'equation on', '\'' + '\', \''.join(vars) + '\'', 'is detected'
+            print('equation on', '\'' + '\', \''.join(vars) + '\'', 'is detected')
             var = vars.pop()
             vars.add(var)
             if len(vars) > 1:
                 var = [v for v in ['x', 'y', 'z', 'a', 'b', 'c', var] if v in vars][0]
 
-            print 'trying to solve equation on variable', var
+            print('trying to solve equation on variable', var)
 
             sols = []
             sol = simplified.solve(var)
@@ -1090,11 +1086,12 @@ while True:
                 sols.append((sol[0].simplify().expand().evalf().simplify(), sol[1]))
 
             if sols:
-                sol = sorted([(len(str(sol[0])), sol) for sol in sols])[0][1]
-                print 'solution:', sol[1], '=', sol[0]
+                sols.sort(key=lambda n: len(str(n)))
+                sol = sols[0]
+                print('solution:', sol[1], '=', sol[0])
 
                 if sol[1].degree() == 1:
-                    print 'checking the solution...'
+                    print('checking the solution...')
                     subs_ast = simplified.subse({var: sol[0]})
                     # print 'substituted the solution to the expression: ', subs_ast
                     subs_attempts = [
@@ -1102,39 +1099,41 @@ while True:
                         subs_ast.simplify().expand().evalf(),
                         subs_ast.simplify().evalf().simplify().evalf()
                     ]
-                    simplified_subs = sorted([(len(str(n)), n) for n in subs_attempts])[0][1]
-                    print 'substitutes the solution to the original expression:', simplified_subs
+                    subs_attempts.sort(key=lambda n: len(str(n)))
+                    simplified_subs = subs_attempts[0]
+                    print('substitutes the solution to the original expression:', simplified_subs)
                     if simplified_subs.is_number() and (simplified_subs.coefficient == 0):
-                        print 'correct, 0 is expected'
+                        print('correct, 0 is expected')
                     elif simplified_subs.is_number() and (abs(simplified_subs.coefficient) < 1e-10):
-                        print 'correct, close to 0 is expected'
+                        print('correct, close to 0 is expected')
                     elif simplified_subs.variables():
                         free_vars = simplified_subs.variables()
-                        print 'there are still free variables, let\'s generate random assignments for them...'
+                        print('there are still free variables, let\'s generate random assignments for them...')
                         assignment = {v: random.uniform(-1000, 1000) for v in free_vars}
-                        print 'the generated assignment to be substituted is', assignment
+                        print('the generated assignment to be substituted is', assignment)
                         final_ast = simplified_subs.subs(assignment)
                         final_attempts = [
                             final_ast.simplify().evalf(),
                             final_ast.simplify().expand().evalf(),
                             final_ast.simplify().evalf().simplify().evalf()
                         ]
-                        final_subs = sorted([(len(str(n)), n) for n in final_attempts])[0][1]
-                        print 'random assignment gives', final_subs
+                        final_attempts.sort(key=lambda n: len(str(n)))
+                        final_subs = final_attempts[0]
+                        print('random assignment gives', final_subs)
                         if final_subs.is_number() and (final_subs.coefficient == 0):
-                            print 'correct, 0 is expected'
+                            print('correct, 0 is expected')
                         elif final_subs.is_number() and (abs(final_subs.coefficient) < 1e-10):
-                            print 'correct, close to 0 is expected'
+                            print('correct, close to 0 is expected')
                         else:
-                            print 'ups... something wrong happened, test it more!'
+                            print('ups... something wrong happened, test it more!')
 
                     else:
-                        print 'ups... something wrong happened, test it more!'
+                        print('ups... something wrong happened, test it more!')
 
             else:
-                print 'cannot solve the equation over', var
+                print('cannot solve the equation over', var)
 
     n_line += 1
-    print
+    print()
 
-print 'thank you for being with us'
+print('thank you for being with us')
