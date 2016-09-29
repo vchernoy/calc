@@ -1,8 +1,16 @@
 import math
 import enum
 
+"""
+It defines immutable AST that represents arithmetic/symbolic expressions.
+"""
 
 class Type(enum.Enum):
+    """
+    The AST could be designed without this enum, but it is much harder.
+    So for now, having in each node the information about its type is redundant,
+    but it is much simpler to manipulate with such nodes.
+    """
     add = 1
     one = 2
     mul = 3
@@ -11,6 +19,11 @@ class Type(enum.Enum):
 
 
 class Add:
+    """
+    Represents coefficient * {x^k for (x,k) in vars} * sum(operands).
+    For examples:
+      2x*x*y*(expr1 + expr2 + expr3 + ... + exprn) could be represented by one Add-node
+    """
     def __init__(self, coefficient=1, variables=None, operands=None):
         self.vars = {}
         incby(self.vars, variables)
@@ -77,6 +90,11 @@ class Add:
 
 
 class Mul:
+    """
+    Represents coefficient * {x^k for (x,k) in vars} * product(operands).
+    For examples:
+      2x*x*y * expr1 * expr2 * expr3 * ... * exprn could be represented by one Mul-node
+    """
     def __init__(self, coefficient=1, variables=None, operands=None):
         self.vars = {}
         incby(self.vars, variables)
@@ -137,6 +155,11 @@ class Mul:
 
 
 class Inv:
+    """
+    Represents coefficient * {x^k for (x,k) in vars} / operands[0].
+    For examples:
+      2x*x*y / expr could be represented by one Inv-node
+    """
     def __init__(self, coefficient=1, variables=None, operands=None):
         self.vars = {}
         incby(self.vars, variables)
@@ -194,6 +217,11 @@ class Inv:
 
 
 class One:
+    """
+    Represents coefficient * {x^k for (x,k) in vars}.
+    For examples:
+      2x*x*y could be represented by one One-node
+    """
     def __init__(self, coefficient=1, variables=None):
         self.vars = {}
         incby(self.vars, variables)
@@ -246,6 +274,11 @@ class One:
 
 
 class Log:
+    """
+    Represents coefficient * {x^k for (x,k) in vars} * log operands[0].
+    For examples:
+      2x*x*y * log expr could be represented by one Log-node
+    """
     def __init__(self, coefficient=1, variables=None, operands=None):
         self.vars = {}
         incby(self.vars, variables)
@@ -301,6 +334,10 @@ class Log:
 
         return res
 
+
+"""
+Factory methods to create nodes of different types.
+"""
 
 def new(operation, coefficient=1, variables=None, operands=None):
     if operation == Type.one:

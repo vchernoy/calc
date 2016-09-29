@@ -2,9 +2,18 @@ import symexpr.ast as ast
 import math
 import functools
 
+"""
+A set of tools that allow to manipulate with AST
+"""
 
 @functools.singledispatch
 def simplify(self):
+    """
+    simplifies the given AST, performars basic transformation, does not open parentheses in a(b+c),
+    but can simplify a + b + c or a * b * c
+    :param self: AST
+    :return: AST
+    """
     raise TypeError("cannot simplify", self)
 
 
@@ -171,6 +180,11 @@ def _inv_simplify(self):
 
 @functools.singledispatch
 def expand(self):
+    """
+    Opens parentheses if meets a(b + x)
+    :param self: AST
+    :return: AST
+    """
     raise TypeError("cannot expand", self)
 
 
@@ -216,6 +230,15 @@ def _mul_expand(self):
 
 @functools.singledispatch
 def solve(self, var):
+    """
+    Tries to solve the equation given in the form of AST.
+    solve('2x-10') => ('5', 'x') meaning that x=5 is the root of 2x-10=0
+    solve('2x*x-y-10') => ('(10+y)/2', 'x*x') meaning that x*x=(10+y)/2 is the root of 2x*x-y-10=0
+    solve('x*x+x') => None -- failed to solve
+    :param self: AST
+    :param var: to find root for this variable
+    :return: a pair (solution as AST, variable as AST) or None if failed to solve
+    """
     raise TypeError("cannot solve", self)
 
 
@@ -311,6 +334,11 @@ def _add_solve(self, var):
 
 @functools.singledispatch
 def evalf(self):
+    """
+    Computes the expression in floating points, but does not change any variables.s
+    :param self: AST
+    :return: AST
+    """
     raise TypeError("cannot evalf", self)
 
 
@@ -382,6 +410,13 @@ def _log_evalf(self):
 
 
 def subs(node, assignment):
+    """
+    Substitute the values from the map into the variables of the given AST.
+    subs('2x+1', x=3) => '2*3+1'
+    :param node: AST
+    :param assignment: a mapping between free variables and their numerical values
+    :return: AST
+    """
     evaluated = [subs(n, assignment) for n in node.operands]
     res_coefficient = node.coefficient
     for var, val in assignment.items():
@@ -395,6 +430,13 @@ def subs(node, assignment):
 
 
 def subse(node, assignment):
+    """
+    Substitute the values (given as ASTs) from the map into the variables of the given AST
+    subse('2x+1', x=3y+1) => '2*(3y+1)+1'
+    :param node: AST
+    :param assignment: a mapping between free variables and their AST values
+    :return: AST
+    """
     evaluated = [subse(n, assignment) for n in node.operands]
     nodes = []
     for var, val in assignment.items():

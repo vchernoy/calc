@@ -3,6 +3,12 @@ import symexpr.tokenizer as tokenizer
 import symexpr.parser as parser
 import symexpr.evaluator as evaluator
 
+"""
+The interactive symbolic calculator.
+Run it as
+python3 calc.py
+It will prompt for input string (expression)
+"""
 
 def all_ways_to_compute(expr):
     return [

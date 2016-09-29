@@ -3,6 +3,11 @@ import enum
 
 
 class Type(enum.Enum):
+    """
+    Defines the types of tokens that are created by tokenizer as result of processing the input string.
+    When tokenizer (Lexer) reaches the end of the input, it generates eol-token.
+    When it finds an invalid character, it creates an err-token.
+    """
     l_paren = '('
     r_paren = ')'
     number = 'num'
@@ -43,6 +48,12 @@ class Error:
 
 
 class Token:
+    """
+    Each token contains its type, see above, and location -- the starting position in the input.
+    If typ is Type.id, the token contains name (of variable or 'log')
+    If typ is Type.number, the token contains number (integer of float)
+    If type is Type.error, the token contains err representing the Lexer error.
+    """
     def __init__(self, loc, typ, name=None, num=None, err=None):
         assert type(typ) == Type
         assert type(loc) == int
@@ -72,6 +83,10 @@ class Token:
 
 
 def tokenize(scanner):
+    """
+    It is the generator that creates tokens from the scanner's output
+    :param scanner:
+    """
     while scanner.has_next():
         loc = scanner.location()
         if scanner.expected_next(simple_tokens):
@@ -157,6 +172,9 @@ def tokenize(scanner):
 
 
 class Scanner:
+    """
+    Scanner provides the charaters in the input stream. The scanner can look at one single character in ahead.
+    """
     def __init__(self, source):
         self.src = source
         self.loc = -1

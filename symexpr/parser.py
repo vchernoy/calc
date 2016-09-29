@@ -3,6 +3,9 @@ import symexpr.ast as ast
 
 
 class TokenReader:
+    """
+    Provides to the next token from the input.
+    """
     def __init__(self, source):
         self.src = source
         self.loc = -1
@@ -18,6 +21,10 @@ class TokenReader:
         self.loc += 1
         return tok
 
+"""
+The sets of tokens that each rule starts from.
+Helps in parsing and error handling.
+"""
 
 expr_paren_starts = {tokenizer.Type.l_paren}
 short_prod_starts = expr_paren_starts | {tokenizer.Type.number, tokenizer.Type.id}
@@ -25,6 +32,9 @@ prod_starts = short_prod_starts
 sum_starts = prod_starts | {tokenizer.Type.add, tokenizer.Type.sub}
 expr_starts = sum_starts
 
+"""
+All the valid tokens (no error and no eol tokens)
+"""
 all_tokens = {
     tokenizer.Type.l_paren, tokenizer.Type.r_paren,
     tokenizer.Type.number, tokenizer.Type.id,
@@ -35,7 +45,13 @@ all_tokens = {
 
 
 def parse(reader, errors):
-    # EE := E [= E]
+    """
+    Recognizes:
+    EE := E [= E]
+    :param reader:
+    :param errors:
+    :return: AST
+    """
 
     tree = parse_expr(reader, errors)
     if find_expected(reader, [tokenizer.Type.equal, tokenizer.Type.eol], errors):
@@ -50,13 +66,27 @@ def parse(reader, errors):
 
 
 def parse_expr(reader, errors):
-    # E := S
+    """
+    Recognizes the rule:
+    EE := E [= E]
+
+    :param reader:
+    :param errors:
+    :return: AST
+    """
 
     return parse_sum(reader, errors)
 
 
 def parse_sum(reader, errors):
-    # S := ['+'|'-'] P ('+'|'-' P)*
+    """
+    Recognizes the rule:
+    S := ['+'|'-'] P ('+'|'-' P)*
+
+    :param reader:
+    :param errors:
+    :return: AST
+    """
 
     if not find_expected(reader, sum_starts, errors):
         return None
@@ -85,10 +115,16 @@ def parse_sum(reader, errors):
 
 
 def parse_product(reader, errors):
-    # P := num ('*'|'/' P)*
-    # P := num (ID | F | PE) ('*'|'/' P)*
-    # P := (ID | F | PE) ('*'|'/' P)*
-    # F := 'log' SP
+    """
+    Recognizes the rules:
+    P := num ('*'|'/' P)*
+    P := num (ID | F | PE) ('*'|'/' P)*
+    P := (ID | F | PE) ('*'|'/' P)*
+    F := 'log' SP
+    :param reader:
+    :param errors:
+    :return: AST
+    """
 
     operation = None
     operands = []
@@ -145,13 +181,19 @@ def parse_product(reader, errors):
 
 
 def parse_short_product(reader, errors):
-    # SP := PE
-    # SP := num
-    # SP := num ID
-    # SP := num F
-    # SP := ID
-    # SP := F
-    # F := 'log' SP
+    """
+    Recognizes the rules:
+    SP := PE
+    SP := num
+    SP := num ID
+    SP := num F
+    SP := ID
+    SP := F
+    F := 'log' SP
+    :param reader:
+    :param errors:
+    :return: AST
+    """
 
     if not find_expected(reader, prod_starts, errors):
         return None
@@ -175,7 +217,13 @@ def parse_short_product(reader, errors):
 
 
 def parse_expr_in_parenthesis(reader, errors):
-    # E := '(' E ')'
+    """
+    Recognizes the rules:
+    E := '(' E ')'
+    :param reader:
+    :param errors:
+    :return: AST
+    """
 
     if not find_expected(reader, expr_paren_starts, errors):
         return None
