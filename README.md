@@ -7,6 +7,11 @@ In order to run it, invoke
 $ python3 calc.py
 ```
 
+To run unit test, invoke:
+```sh
+$ python3 -m unittest tests.basic_tests
+```
+
 ### Libraries Used
 
 - enum
@@ -23,6 +28,8 @@ $ python3 calc.py
   -   tokenizer.py -- the parser's front-end, it processes the input and generates a stream of tokens, like num, id, left paren, add, etc... 
   -   parser.py -- parsers the stream of tokens and generates the AST.
   -   evaluator.py -- a group of tools to manipulate with AST, for example, functions that simplify or expand the AST (expression).
+* tests/
+  -   basic_tests.py -- simple unit/integration-tests
 
 Such structure has better decoupling of modules, so for example, ast-module could be used with other algorithms, or we can use different the lexer (front-end parser), or we can develop new algorithm for evaluating/simplifying the AST.
 

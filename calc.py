@@ -23,7 +23,7 @@ n_line = 1
 while True:
     inp = input('input ' + str(n_line) + ' > ')
     toks = tokenizer.tokenize(tokenizer.Scanner(inp))
-    tok_list = [t for t in toks]
+    tok_list = list(toks)
     if (len(tok_list) == 1) and (tok_list[0].typ == tokenizer.Type.eol):
         break
 
