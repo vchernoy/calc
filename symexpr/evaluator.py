@@ -1,5 +1,6 @@
+import math
+import functools
 import symexpr.ast as ast
-import math, functools
 
 """
 A set of tools that allow to manipulate with AST
