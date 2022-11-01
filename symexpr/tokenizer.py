@@ -189,3 +189,4 @@ class Scanner:
 
     def expected_next(self, expected_values):
         return self.has_next() and (self.look_next() in expected_values)
+
