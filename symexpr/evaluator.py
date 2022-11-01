@@ -1,15 +1,15 @@
 import symexpr.ast as ast
-import math
-import functools
+import math, functools
 
 """
 A set of tools that allow to manipulate with AST
 """
 
+
 @functools.singledispatch
 def simplify(self):
     """
-    simplifies the given AST, performars basic transformation, does not open parentheses in a(b+c),
+    simplifies the given AST, performs basic transformation, does not open parentheses in a(b+c),
     but can simplify a + b + c or a * b * c
     :param self: AST
     :return: AST
@@ -98,7 +98,7 @@ def _mul_simplify(self):
 
         if n.operation == ast.Type.inv:
             t = n.operands[0]
-            ast.incby(res_vars, {v: -p for (v, p) in t.vars.items()})
+            ast.incby(res_vars, {v: -p for v, p in t.vars.items()})
             inv_coefficient *= t.coefficient
             if t.operation != ast.Type.one:
                 evaluated3.append(ast.inverse(ast.new(operation=t.operation, operands=t.operands)))
@@ -111,8 +111,8 @@ def _mul_simplify(self):
 
         evaluated.append(n)
 
-    pos_vars = {v: p for (v, p) in res_vars.items() if p > 0}
-    inv_vars = {v: -p for (v, p) in res_vars.items() if p < 0}
+    pos_vars = {v: p for v, p in res_vars.items() if p > 0}
+    inv_vars = {v: -p for v, p in res_vars.items() if p < 0}
 
     n = ast.inverse(node=ast.term(inv_coefficient, inv_vars), variables=pos_vars, coefficient=res_coefficient)
     if n.operation == ast.Type.one:
@@ -128,10 +128,10 @@ def _inv_simplify(self):
 
     res_vars = {}
     ast.incby(res_vars, self.vars)
-    ast.incby(res_vars, {v: -p for (v, p) in evaluated.vars.items()})
+    ast.incby(res_vars, {v: -p for v, p in evaluated.vars.items()})
 
-    pos_vars = {v: p for (v, p) in res_vars.items() if p > 0}
-    inv_vars = {v: -p for (v, p) in res_vars.items() if p < 0}
+    pos_vars = {v: p for v, p in res_vars.items() if p > 0}
+    inv_vars = {v: -p for v, p in res_vars.items() if p < 0}
 
     if evaluated.operation == ast.Type.one:
         return ast.inverse(
@@ -171,12 +171,17 @@ def _inv_simplify(self):
 
     return ast.inverse(
         simplify(
-            ast.new(operation=evaluated.operation, variables=inv_vars, operands=evaluated.operands,
-                    coefficient=evaluated.coefficient)
+            ast.new(
+                operation=evaluated.operation,
+                variables=inv_vars,
+                operands=evaluated.operands,
+                coefficient=evaluated.coefficient
+            )
         ),
         coefficient=self.coefficient,
         variables=pos_vars
     )
+
 
 @functools.singledispatch
 def expand(self):
@@ -194,6 +199,7 @@ def expand(self):
 def _expand(self):
     return self
 
+
 @expand.register(ast.Add)
 def _add_expand(self):
     term = ast.term(coefficient=self.coefficient, variables=self.vars)
@@ -207,6 +213,7 @@ def _add_expand(self):
 
     terms = [simplify(ast.multiplication(nodes=[term, t, term1])) for t in node.operands]
     return simplify(ast.addition(terms))
+
 
 @expand.register(ast.Mul)
 def _mul_expand(self):
@@ -292,7 +299,7 @@ def _add_solve(self, var):
     var_terms = [t for t in self.operands if var in t.variables()]
     non_var_terms = [t for t in self.operands if var not in t.variables()]
 
-    if (self.vars.get(var, 0) < 0):
+    if self.vars.get(var, 0) < 0:
         return None
 
     if (self.vars.get(var, 0) > 0) and var_terms:
@@ -320,8 +327,13 @@ def _add_solve(self, var):
         ast.incby(reduced_vars, term.vars)
         ast.incby(reduced_vars, {var: -power})
         reduced_var_terms.append(
-            ast.new(operation=term.operation, operands=term.operands, coefficient=term.coefficient,
-                    variables=reduced_vars))
+            ast.new(
+                operation=term.operation,
+                operands=term.operands,
+                coefficient=term.coefficient,
+                variables=reduced_vars
+            )
+        )
 
     term1 = expand(ast.negative(ast.addition(non_var_terms)))
     term2 = ast.inverse(ast.addition(reduced_var_terms))
@@ -352,7 +364,7 @@ def _add_evalf(self):
     evaluated = [evalf(n) for n in self.operands]
     scalars = [n for n in evaluated if n.is_number()]
     non_scalars = [n for n in evaluated if not n.is_number()]
-    val = sum([n.coefficient for n in scalars])
+    val = sum(n.coefficient for n in scalars)
     terms = []
     if val != 0:
         terms.append(ast.number(val))
@@ -367,9 +379,7 @@ def _mul_evalf(self):
     evaluated = [evalf(n) for n in self.operands]
     scalars = [n for n in evaluated if n.is_number()]
     non_scalars = [n for n in evaluated if not n.is_number()]
-    val = 1
-    for n in scalars:
-        val *= n.coefficient
+    val = math.prod(n.coefficient for n in scalars)
 
     return ast.multiplication(non_scalars, coefficient=self.coefficient * val, variables=self.vars)
 
@@ -409,7 +419,7 @@ def _log_evalf(self):
     return ast.logarithm(non_scalars[0], coefficient=self.coefficient, variables=self.vars)
 
 
-def subs(node, assignment):
+def subs(node, assignment: dict):
     """
     Substitute the values from the map into the variables of the given AST.
     subs('2x+1', x=3) => '2*3+1'
@@ -418,18 +428,16 @@ def subs(node, assignment):
     :return: AST
     """
     evaluated = [subs(n, assignment) for n in node.operands]
-    res_coefficient = node.coefficient
-    for var, val in assignment.items():
-        if var in node.vars:
-            power = node.vars[var]
-            res_coefficient *= val ** power
-
-    res_var = {v: p for (v, p) in node.vars.items() if v not in assignment}
+    res_coefficient = math.prod(
+        (assignment[v] ** p for v, p in node.vars.items() if v in assignment),
+        start=node.coefficient
+    )
+    res_var = {v: p for v, p in node.vars.items() if v not in assignment}
 
     return ast.new(operation=node.operation, operands=evaluated, coefficient=res_coefficient, variables=res_var)
 
 
-def subse(node, assignment):
+def subse(node, assignment: dict):
     """
     Substitute the values (given as ASTs) from the map into the variables of the given AST
     subse('2x+1', x=3y+1) => '2*(3y+1)+1'
@@ -439,13 +447,11 @@ def subse(node, assignment):
     """
     evaluated = [subse(n, assignment) for n in node.operands]
     nodes = []
-    for var, val in assignment.items():
-        if var in node.vars:
-            power = node.vars[var]
-            for i in range(power):
-                nodes.append(val)
+    for v, p in node.vars.items():
+        if v in assignment:
+            nodes.extend([assignment[v]] * p)
 
-    res_var = {v: p for (v, p) in node.vars.items() if v not in assignment}
+    res_var = {v: p for v, p in node.vars.items() if v not in assignment}
 
     node = ast.new(operation=node.operation, operands=evaluated, coefficient=node.coefficient, variables=res_var)
     return ast.multiplication(nodes + [node])
