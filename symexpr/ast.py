@@ -1,9 +1,9 @@
-import math
-import enum
+import math, enum, itertools
 
 """
 It defines immutable AST that represents arithmetic/symbolic expressions.
 """
+
 
 class Type(enum.Enum):
     """
@@ -39,32 +39,29 @@ class Add:
         assert type(self.operands) == list
         assert len(self.operands) >= 2
 
-    def degree(self, var=None):
-        d = self.vars.get(var, 0) if var else sum(self.vars.values())
-
-        return d + max([n.degree(var) for n in self.operands])
+    def degree(self, var=None) -> int:
+        return _degree(self, var) + max(n.degree(var) for n in self.operands)
 
     def variables(self):
         return _variables(self)
 
-    def is_number(self):
+    def is_number(self) -> bool:
         return False
 
-    def is_term(self):
+    def is_term(self) -> bool:
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_str()
 
-    def footprint(self):
-        return ','.join([str(v) for v in sorted(self.vars.items())])
+    def footprint(self) -> str:
+        return _footprint(self)
 
-    def __repr__(self):
-        return '[' + str(self.operation) + ',' + str(self.coefficient) + ',' + str(self.vars) + ',' + ','.join(
-            [repr(o) for o in self.operands]) + ']'
+    def __repr__(self) -> str:
+        return _repr(self)
 
-    def to_str(self, in_parenthesis=False):
-        s_vars = '*'.join(['*'.join([v[0]] * v[1]) for v in sorted(self.vars.items())])
+    def to_str(self, in_parenthesis=False) -> str:
+        s_vars = _vars_to_str(self)
 
         res = ''
         if self.coefficient == -1:
@@ -79,7 +76,7 @@ class Add:
         if in_extra_parenthesis:
             res += '('
 
-        res += '+'.join([n.to_str(True) for n in self.operands])
+        res += '+'.join(n.to_str(True) for n in self.operands)
         if in_extra_parenthesis:
             res += ')'
 
@@ -105,35 +102,32 @@ class Mul:
 
         assert type(self.vars) == dict
         assert type(self.operands) == list
-        assert type(self.coefficient) in [float, int]
+        assert type(self.coefficient) in (float, int)
         assert len(self.operands) >= 2
 
-    def degree(self, var=None):
-        d = self.vars.get(var, 0) if var else sum(self.vars.values())
-
-        return d + sum([n.degree(var) for n in self.operands])
+    def degree(self, var=None) -> int:
+        return _degree(self, var) + sum(n.degree(var) for n in self.operands)
 
     def variables(self):
         return _variables(self)
 
-    def is_number(self):
+    def is_number(self) -> bool:
         return False
 
-    def is_term(self):
+    def is_term(self) -> bool:
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_str()
 
-    def footprint(self):
-        return ','.join([str(v) for v in sorted(self.vars.items())])
+    def footprint(self) -> str:
+        return _footprint(self)
 
-    def __repr__(self):
-        return '[' + str(self.operation) + ',' + str(self.coefficient) + ',' + str(self.vars) + ',' + ','.join(
-            [repr(o) for o in self.operands]) + ']'
+    def __repr__(self) -> str:
+        return _repr(self)
 
-    def to_str(self, in_parenthesis=False):
-        s_vars = '*'.join(['*'.join([v[0]] * v[1]) for v in sorted(self.vars.items())])
+    def to_str(self, in_parenthesis=False) -> str:
+        s_vars = _vars_to_str(self)
 
         res = ''
         if self.coefficient == -1:
@@ -144,7 +138,7 @@ class Mul:
         if self.vars:
             res += s_vars + '*('
 
-        res += '*'.join([n.to_str(True) for n in self.operands])
+        res += '*'.join(n.to_str(True) for n in self.operands)
         if self.vars:
             res += ')'
 
@@ -170,36 +164,33 @@ class Inv:
 
         assert type(self.vars) == dict
         assert type(self.operands) == list
-        assert type(self.coefficient) in [float, int]
+        assert type(self.coefficient) in (float, int)
 
         assert len(self.operands) == 1
 
-    def degree(self, var=None):
-        d = self.vars.get(var, 0) if var else sum(self.vars.values())
-
-        return d - self.operands[0].degree(var)
+    def degree(self, var=None) -> int:
+        return _degree(self, var) - self.operands[0].degree(var)
 
     def variables(self):
         return _variables(self)
 
-    def is_number(self):
+    def is_number(self) -> bool:
         return False
 
-    def is_term(self):
+    def is_term(self) -> bool:
         return self.operands[0].is_number()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_str()
 
-    def footprint(self):
-        return ','.join([str(v) for v in sorted(self.vars.items())])
+    def footprint(self) -> str:
+        return _footprint(self)
 
-    def __repr__(self):
-        return '[' + str(self.operation) + ',' + str(self.coefficient) + ',' + str(self.vars) + ',' + ','.join(
-            [repr(o) for o in self.operands]) + ']'
+    def __repr__(self) -> str:
+        return _repr(self)
 
-    def to_str(self, in_parenthesis=False):
-        s_vars = '*'.join(['*'.join([v[0]] * v[1]) for v in sorted(self.vars.items())])
+    def to_str(self, in_parenthesis=False) -> str:
+        s_vars = _vars_to_str(self)
 
         if (self.coefficient == -1) and self.vars:
             res = '-' + s_vars
@@ -231,31 +222,31 @@ class One:
         self.operands = []
 
         assert type(self.vars) == dict
-        assert type(self.coefficient) in [float, int]
+        assert type(self.coefficient) in (float, int)
 
-    def degree(self, var=None):
-        return self.vars.get(var, 0) if var else sum(self.vars.values())
+    def degree(self, var=None) -> int:
+        return _degree(self, var)
 
     def variables(self):
         return _variables(self)
 
-    def is_number(self):
+    def is_number(self) -> bool:
         return not self.vars
 
-    def is_term(self):
+    def is_term(self) -> bool:
         return True
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_str()
 
-    def footprint(self):
-        return ','.join([str(v) for v in sorted(self.vars.items())])
+    def footprint(self) -> str:
+        return _footprint(self)
 
-    def __repr__(self):
-        return '[' + str(self.operation) + ',' + str(self.coefficient) + ',' + str(self.vars) + ',' + ']'
+    def __repr__(self) -> str:
+        return _repr(self)
 
-    def to_str(self, in_parenthesis=False):
-        s_vars = '*'.join(['*'.join([v[0]] * v[1]) for v in sorted(self.vars.items())])
+    def to_str(self, in_parenthesis=False) -> str:
+        s_vars = _vars_to_str(self)
 
         around_parenthesis = in_parenthesis and (((self.coefficient != 1) and self.vars) or (self.coefficient < 0))
 
@@ -289,34 +280,33 @@ class Log:
 
         assert type(self.vars) == dict
         assert type(self.operands) == list
-        assert type(self.coefficient) in [float, int]
+        assert type(self.coefficient) in (float, int)
 
         assert len(self.operands) == 1
 
-    def degree(self, var=None):
-        return self.vars.get(var, 0) if var else sum(self.vars.values())
+    def degree(self, var=None) -> int:
+        return _degree(self, var)
 
     def variables(self):
         return _variables(self)
 
-    def is_number(self):
+    def is_number(self) -> bool:
         return False
 
-    def is_term(self):
+    def is_term(self) -> bool:
         return self.operands[0].is_number()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_str()
 
-    def footprint(self):
-        return ','.join([str(v) for v in sorted(self.vars.items())])
+    def footprint(self) -> str:
+        return _footprint(self)
 
-    def __repr__(self):
-        return '[' + str(self.operation) + ',' + str(self.coefficient) + ',' + str(self.vars) + ',' + ','.join(
-            [repr(o) for o in self.operands]) + ']'
+    def __repr__(self) -> str:
+        return _repr(self)
 
-    def to_str(self, in_parenthesis=False):
-        s_vars = '*'.join(['*'.join([v[0]] * v[1]) for v in sorted(self.vars.items())])
+    def to_str(self, in_parenthesis=False) -> str:
+        s_vars = _vars_to_str(self)
 
         res = ''
         if self.coefficient == -1:
@@ -335,11 +325,10 @@ class Log:
         return res
 
 
-"""
-Factory methods to create nodes of different types.
-"""
-
 def new(operation, coefficient=1, variables=None, operands=None):
+    """
+    Factory methods to create nodes of different types.
+    """
     if operation == Type.one:
         assert not operands
         return term(coefficient, variables)
@@ -455,7 +444,7 @@ def logarithm(node, variables=None, coefficient=1):
     return Log(operands=[node], variables=variables, coefficient=coefficient)
 
 
-def _variables(node):
+def _variables(node) -> set[str]:
     res = set(node.vars.keys())
     for n in node.operands:
         res.update(n.variables())
@@ -463,11 +452,31 @@ def _variables(node):
     return res
 
 
+def _footprint(node) -> str:
+    return ','.join(str(var) for var in sorted(node.vars.items()))
+
+
+def _repr(node) -> str:
+    r = f'[{node.operation},{node.coefficient},{node.vars}'
+    if node.operands:
+        r += ',{",".join(repr(o) for o in node.operands)}'
+    r += ']'
+    return r
+
+
+def _vars_to_str(node) -> str:
+    return '*'.join(itertools.chain.from_iterable([v] * d for v,d in sorted(node.vars.items())))
+
+
+def _degree(node, var=None) -> int:
+    return node.vars.get(var, 0) if var else sum(node.vars.values())
+
+
 def incby(acc_vars, added_vars):
     if not added_vars:
         return
 
-    for (var, power) in added_vars.items():
+    for var, power in added_vars.items():
         acc_vars[var] = acc_vars.setdefault(var, 0) + power
         if acc_vars[var] == 0:
             del acc_vars[var]
