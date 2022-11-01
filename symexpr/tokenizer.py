@@ -1,5 +1,5 @@
-import string
 import enum
+import string
 
 
 class Type(enum.Enum):
@@ -21,7 +21,7 @@ class Type(enum.Enum):
     eol = 'EOL'
 
 
-simple_tokens = {t.value:t for t in [
+simple_tokens = {t.value: t for t in [
     Type.l_paren,
     Type.r_paren,
     Type.add,
@@ -41,10 +41,8 @@ class Error:
         self.parsed_chars = parsed_chars
         self.next_char = next_char
 
-    def __str__(self):
-        return 'Error @ {}: expected={}, parsed={}, next={}'.format(
-            self.location, self.expected_chars, self.parsed_chars, self.next_char
-        )
+    def __str__(self) -> str:
+        return f'Error @ {self.location}: expected={self.expected_chars}, parsed={self.parsed_chars}, next={self.next_char}'
 
 
 class Token:
@@ -64,12 +62,10 @@ class Token:
         self.number = num
         self.err = err
 
-    def __repr__(self):
-        return '({}:{})'.format(
-            ';'.join([str(t) for t in [self.typ, self.name, self.number, str(self.err)] if 1]), self.location
-        )
+    def __repr__(self) -> str:
+        return f'({";".join(str(t) for t in [self.typ, self.name, self.number, self.err])}:{self.location})'
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.typ == Type.number:
             return str(self.number)
 
@@ -137,10 +133,7 @@ def tokenize(scanner):
                     continue
 
             try:
-                if is_int:
-                    yield Token(loc, Type.number, num=int(num))
-                else:
-                    yield Token(loc, Type.number, num=float(num))
+                yield Token(loc, Type.number, num=int(num) if is_int else float(num))
             except ValueError:
                 yield Token(
                     loc=loc,
@@ -155,10 +148,8 @@ def tokenize(scanner):
                 lit += scanner.move_next()
 
             yield Token(loc, Type.id, lit)
-
         elif scanner.expected_next(' \t'):
             scanner.move_next()
-
         else:
             yield Token(
                 loc=loc,
@@ -173,7 +164,7 @@ def tokenize(scanner):
 
 class Scanner:
     """
-    Scanner provides the charaters in the input stream. The scanner can look at one single character in ahead.
+    Scanner provides the characters in the input stream. The scanner can look at one single character in ahead.
     """
     def __init__(self, source):
         self.src = source
