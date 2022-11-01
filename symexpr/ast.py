@@ -18,32 +18,65 @@ class Type(enum.Enum):
     log = 5
 
 
-class Add:
+class Node:
+    def __init__(self, operation: Type, coefficient: int|float = 1, variables: dict = None, operands = None):
+        assert type(operation) == Type
+        assert type(coefficient) in (float, int)
+
+        self.vars = {}
+        incby(self.vars, variables)
+
+        self.operation = operation
+        self.coefficient = coefficient
+        self.operands = operands if operands else []
+
+        assert type(self.operands) == list
+
+    def degree(self, var: str = None) -> int:
+        raise NotImplemented()
+
+    def variables(self) -> set[str]:
+        res = set(self.vars.keys())
+        for n in self.operands:
+            res.update(n.variables())
+
+        return res
+
+    def is_number(self) -> bool:
+        raise NotImplemented()
+
+    def is_term(self) -> bool:
+        raise NotImplemented()
+
+    def __str__(self) -> str:
+        return self.to_str()
+
+    def footprint(self) -> str:
+        return ','.join(str(var) for var in sorted(self.vars.items()))
+
+    def __repr__(self) -> str:
+        r = f'[{self.operation},{self.coefficient},{self.vars}'
+        if self.operands:
+            r += ',{",".join(repr(o) for o in node.operands)}'
+        r += ']'
+        return r
+
+    def to_str(self, in_parenthesis:bool = False) -> str:
+        raise NotImplemented()
+
+
+class Add(Node):
     """
     Represents coefficient * {x^k for (x,k) in vars} * sum(operands).
     For examples:
       2x*x*y*(expr1 + expr2 + expr3 + ... + exprn) could be represented by one Add-node
     """
     def __init__(self, coefficient=1, variables=None, operands=None):
-        self.vars = {}
-        incby(self.vars, variables)
-
-        self.coefficient = coefficient
-        self.operation = Type.add
-        self.operands = operands if operands else []
-
-        assert type(self.vars) == dict
-        assert type(self.operands) == list
-        assert type(self.coefficient) in [float, int]
-
-        assert type(self.operands) == list
+        super().__init__(Type.add, coefficient, variables, operands)
         assert len(self.operands) >= 2
 
-    def degree(self, var=None) -> int:
+    def degree(self, var: str = None) -> int:
         return _degree(self, var) + max(n.degree(var) for n in self.operands)
-
-    def variables(self):
-        return _variables(self)
 
     def is_number(self) -> bool:
         return False
@@ -51,16 +84,7 @@ class Add:
     def is_term(self) -> bool:
         return False
 
-    def __str__(self) -> str:
-        return self.to_str()
-
-    def footprint(self) -> str:
-        return _footprint(self)
-
-    def __repr__(self) -> str:
-        return _repr(self)
-
-    def to_str(self, in_parenthesis=False) -> str:
+    def to_str(self, in_parenthesis : bool = False) -> str:
         s_vars = _vars_to_str(self)
 
         res = ''
@@ -86,30 +110,18 @@ class Add:
         return res
 
 
-class Mul:
+class Mul(Node):
     """
     Represents coefficient * {x^k for (x,k) in vars} * product(operands).
     For examples:
       2x*x*y * expr1 * expr2 * expr3 * ... * exprn could be represented by one Mul-node
     """
     def __init__(self, coefficient=1, variables=None, operands=None):
-        self.vars = {}
-        incby(self.vars, variables)
-
-        self.coefficient = coefficient
-        self.operation = Type.mul
-        self.operands = operands if operands else []
-
-        assert type(self.vars) == dict
-        assert type(self.operands) == list
-        assert type(self.coefficient) in (float, int)
+        super().__init__(Type.mul, coefficient, variables, operands)
         assert len(self.operands) >= 2
 
-    def degree(self, var=None) -> int:
+    def degree(self, var: str = None) -> int:
         return _degree(self, var) + sum(n.degree(var) for n in self.operands)
-
-    def variables(self):
-        return _variables(self)
 
     def is_number(self) -> bool:
         return False
@@ -117,16 +129,7 @@ class Mul:
     def is_term(self) -> bool:
         return False
 
-    def __str__(self) -> str:
-        return self.to_str()
-
-    def footprint(self) -> str:
-        return _footprint(self)
-
-    def __repr__(self) -> str:
-        return _repr(self)
-
-    def to_str(self, in_parenthesis=False) -> str:
+    def to_str(self, in_parenthesis: bool = False) -> str:
         s_vars = _vars_to_str(self)
 
         res = ''
@@ -148,31 +151,18 @@ class Mul:
         return res
 
 
-class Inv:
+class Inv(Node):
     """
     Represents coefficient * {x^k for (x,k) in vars} / operands[0].
     For examples:
       2x*x*y / expr could be represented by one Inv-node
     """
     def __init__(self, coefficient=1, variables=None, operands=None):
-        self.vars = {}
-        incby(self.vars, variables)
-
-        self.coefficient = coefficient
-        self.operation = Type.inv
-        self.operands = operands if operands else []
-
-        assert type(self.vars) == dict
-        assert type(self.operands) == list
-        assert type(self.coefficient) in (float, int)
-
+        super().__init__(Type.inv, coefficient, variables, operands)
         assert len(self.operands) == 1
 
-    def degree(self, var=None) -> int:
+    def degree(self, var: str = None) -> int:
         return _degree(self, var) - self.operands[0].degree(var)
-
-    def variables(self):
-        return _variables(self)
 
     def is_number(self) -> bool:
         return False
@@ -180,16 +170,7 @@ class Inv:
     def is_term(self) -> bool:
         return self.operands[0].is_number()
 
-    def __str__(self) -> str:
-        return self.to_str()
-
-    def footprint(self) -> str:
-        return _footprint(self)
-
-    def __repr__(self) -> str:
-        return _repr(self)
-
-    def to_str(self, in_parenthesis=False) -> str:
+    def to_str(self, in_parenthesis: bool = False) -> str:
         s_vars = _vars_to_str(self)
 
         if (self.coefficient == -1) and self.vars:
@@ -207,28 +188,17 @@ class Inv:
         return res
 
 
-class One:
+class One(Node):
     """
     Represents coefficient * {x^k for (x,k) in vars}.
     For examples:
       2x*x*y could be represented by one One-node
     """
-    def __init__(self, coefficient=1, variables=None):
-        self.vars = {}
-        incby(self.vars, variables)
+    def __init__(self, coefficient=1, variables=None, operands=None):
+        super().__init__(Type.one, coefficient, variables)
 
-        self.coefficient = coefficient
-        self.operation = Type.one
-        self.operands = []
-
-        assert type(self.vars) == dict
-        assert type(self.coefficient) in (float, int)
-
-    def degree(self, var=None) -> int:
+    def degree(self, var:str = None) -> int:
         return _degree(self, var)
-
-    def variables(self):
-        return _variables(self)
 
     def is_number(self) -> bool:
         return not self.vars
@@ -236,16 +206,7 @@ class One:
     def is_term(self) -> bool:
         return True
 
-    def __str__(self) -> str:
-        return self.to_str()
-
-    def footprint(self) -> str:
-        return _footprint(self)
-
-    def __repr__(self) -> str:
-        return _repr(self)
-
-    def to_str(self, in_parenthesis=False) -> str:
+    def to_str(self, in_parenthesis: bool = False) -> str:
         s_vars = _vars_to_str(self)
 
         around_parenthesis = in_parenthesis and (((self.coefficient != 1) and self.vars) or (self.coefficient < 0))
@@ -264,31 +225,18 @@ class One:
         return res
 
 
-class Log:
+class Log(Node):
     """
     Represents coefficient * {x^k for (x,k) in vars} * log operands[0].
     For examples:
       2x*x*y * log expr could be represented by one Log-node
     """
     def __init__(self, coefficient=1, variables=None, operands=None):
-        self.vars = {}
-        incby(self.vars, variables)
-
-        self.coefficient = coefficient
-        self.operation = Type.log
-        self.operands = operands if operands else []
-
-        assert type(self.vars) == dict
-        assert type(self.operands) == list
-        assert type(self.coefficient) in (float, int)
-
+        super().__init__(Type.log, coefficient, variables, operands)
         assert len(self.operands) == 1
 
-    def degree(self, var=None) -> int:
+    def degree(self, var: str = None) -> int:
         return _degree(self, var)
-
-    def variables(self):
-        return _variables(self)
 
     def is_number(self) -> bool:
         return False
@@ -296,16 +244,7 @@ class Log:
     def is_term(self) -> bool:
         return self.operands[0].is_number()
 
-    def __str__(self) -> str:
-        return self.to_str()
-
-    def footprint(self) -> str:
-        return _footprint(self)
-
-    def __repr__(self) -> str:
-        return _repr(self)
-
-    def to_str(self, in_parenthesis=False) -> str:
+    def to_str(self, in_parenthesis: bool = False) -> str:
         s_vars = _vars_to_str(self)
 
         res = ''
@@ -444,31 +383,11 @@ def logarithm(node, variables=None, coefficient=1):
     return Log(operands=[node], variables=variables, coefficient=coefficient)
 
 
-def _variables(node) -> set[str]:
-    res = set(node.vars.keys())
-    for n in node.operands:
-        res.update(n.variables())
-
-    return res
-
-
-def _footprint(node) -> str:
-    return ','.join(str(var) for var in sorted(node.vars.items()))
-
-
-def _repr(node) -> str:
-    r = f'[{node.operation},{node.coefficient},{node.vars}'
-    if node.operands:
-        r += ',{",".join(repr(o) for o in node.operands)}'
-    r += ']'
-    return r
-
-
 def _vars_to_str(node) -> str:
     return '*'.join(itertools.chain.from_iterable([v] * d for v,d in sorted(node.vars.items())))
 
 
-def _degree(node, var=None) -> int:
+def _degree(node, var: str = None) -> int:
     return node.vars.get(var, 0) if var else sum(node.vars.values())
 
 
