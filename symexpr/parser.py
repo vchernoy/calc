@@ -21,6 +21,7 @@ class TokenReader:
         self.loc += 1
         return tok
 
+
 """
 The sets of tokens that each rule starts from.
 Helps in parsing and error handling.
@@ -52,7 +53,6 @@ def parse(reader, errors):
     :param errors:
     :return: AST
     """
-
     tree = parse_expr(reader, errors)
     if find_expected(reader, [tokenizer.Type.equal, tokenizer.Type.eol], errors):
         if reader.look_next().typ == tokenizer.Type.equal:
@@ -74,7 +74,6 @@ def parse_expr(reader, errors):
     :param errors:
     :return: AST
     """
-
     return parse_sum(reader, errors)
 
 
@@ -87,7 +86,6 @@ def parse_sum(reader, errors):
     :param errors:
     :return: AST
     """
-
     if not find_expected(reader, sum_starts, errors):
         return None
 
@@ -125,7 +123,6 @@ def parse_product(reader, errors):
     :param errors:
     :return: AST
     """
-
     operation = None
     operands = []
     while True:
@@ -139,6 +136,7 @@ def parse_product(reader, errors):
                 tree = ast.logarithm(parse_short_product(reader, errors))
             else:
                 tree = ast.variable(name)
+
         elif prev_tok.typ == tokenizer.Type.number:
             number = reader.move_next().number
             tree = ast.number(number)
@@ -154,13 +152,14 @@ def parse_product(reader, errors):
         else:
             operands.append(tree)
 
-        if (prev_tok.typ == tokenizer.Type.number) and (operation in [None, ast.Type.mul]):
+        if (prev_tok.typ == tokenizer.Type.number) and (operation in (None, ast.Type.mul)):
             if not find_expected(reader, all_tokens - {tokenizer.Type.number} | {tokenizer.Type.eol}, errors):
                 break
         else:
             if not find_expected(
-                    reader, all_tokens - {tokenizer.Type.number, tokenizer.Type.id, tokenizer.Type.l_paren} | {
-                    tokenizer.Type.eol}, errors
+                    reader,
+                    all_tokens - {tokenizer.Type.number, tokenizer.Type.id, tokenizer.Type.l_paren} | {tokenizer.Type.eol},
+                    errors
             ):
                 break
 
@@ -194,7 +193,6 @@ def parse_short_product(reader, errors):
     :param errors:
     :return: AST
     """
-
     if not find_expected(reader, prod_starts, errors):
         return None
 
@@ -224,7 +222,6 @@ def parse_expr_in_parenthesis(reader, errors):
     :param errors:
     :return: AST
     """
-
     if not find_expected(reader, expr_paren_starts, errors):
         return None
 
@@ -237,7 +234,7 @@ def parse_expr_in_parenthesis(reader, errors):
     return tree
 
 
-def find_expected(reader, expected_tokens, errors):
+def find_expected(reader, expected_tokens, errors) -> bool:
     if reader.look_next().typ not in expected_tokens:
         errors.append(
             Error(expected_tokens=expected_tokens, received_token=reader.look_next())
@@ -254,10 +251,10 @@ class Error:
         self.expected_tokens = expected_tokens
         self.received_token = received_token
 
-        exp_simple_toks = "','".join([str(t.value) for t in expected_tokens if t.value in tokenizer.simple_tokens])
-        exp_other_toks = ",".join([str(t.value) for t in expected_tokens if t.value not in tokenizer.simple_tokens])
+        exp_simple_toks = "','".join(str(t.value) for t in expected_tokens if t.value in tokenizer.simple_tokens)
+        exp_other_toks = ",".join(str(t.value) for t in expected_tokens if t.value not in tokenizer.simple_tokens)
 
-        exp_toks = ("'" + exp_simple_toks + "'") if exp_simple_toks else ""
+        exp_toks = f"'{exp_simple_toks}'" if exp_simple_toks else ""
         if exp_other_toks:
             if exp_toks:
                 exp_toks += ','
@@ -266,14 +263,12 @@ class Error:
 
         if received_token.typ == tokenizer.Type.error:
             err = received_token.err
-            self.msg = "error @ {}: invalid character: '{}', expected tokens: {} (characters: {})".format(
-                self.location, err.next_char, exp_toks, err.expected_chars)
+            self.msg = f"error @ {self.location}: invalid char: '{err.next_char}', expected tokens: {exp_toks} (chars: {err.expected_chars})"
         else:
-            self.msg = "error @ {}: unexpected token: {}, expected tokens: {}".format(
-                self.location, received_token.typ.value, exp_toks)
+            self.msg = f"error @ {self.location}: unexpected token: {received_token.typ.value}, expected tokens: {exp_toks}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr(self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.msg
