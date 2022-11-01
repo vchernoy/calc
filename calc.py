@@ -75,7 +75,7 @@ def main():
                     if not sol.is_number():
                         evaluated_sol = evaluator.evalf(sol)
                         if str(evaluated_sol) != str(sol):
-                            print('approximate solution:', root_expr, '=', evaluator.evalf(sol))
+                            print(f'approximate solution: root_expr = {evaluator.evalf(sol)}')
 
                     if root_expr.degree() == 1:
                         print('checking the solution...')
@@ -84,22 +84,22 @@ def main():
                         subs_attempts = all_ways_to_compute(subs_ast)
                         subs_attempts.sort(key=lambda n: len(str(n)))
                         simplified_subs = subs_attempts[0]
-                        print('substitutes the solution to the original expression:', simplified_subs)
+                        print(f'substitutes the solution to the original expression: {simplified_subs}')
                         if simplified_subs.is_number() and (simplified_subs.coefficient == 0):
                             print('correct, 0 is expected')
                         elif simplified_subs.is_number() and (abs(simplified_subs.coefficient) < 1e-10):
                             print('correct, close to 0 is expected')
                         elif simplified_subs.variables():
                             free_vars = simplified_subs.variables()
-                            print('there are still free variables', free_vars)
-                            print('let\'s generate random assignments for them...')
+                            print(f'there are still free variables {free_vars}')
+                            print("let's generate random assignments for them...")
                             assignment = {v: random.uniform(-1000, 1000) for v in free_vars}
-                            print('the generated assignment to be substituted is', assignment)
+                            print(f'the generated assignment to be substituted is {assignment}')
                             final_ast = evaluator.subs(simplified_subs, assignment)
                             final_attempts = all_ways_to_compute(final_ast)
                             final_attempts.sort(key=lambda n: len(str(n)))
                             final_subs = final_attempts[0]
-                            print('random assignment gives', final_subs)
+                            print(f'random assignment gives {final_subs}')
                             if final_subs.is_number() and (final_subs.coefficient == 0):
                                 print('correct, 0 is expected')
                             elif final_subs.is_number() and (abs(final_subs.coefficient) < 1e-10):
@@ -111,17 +111,18 @@ def main():
                             print('ups... something wrong happened, test it more!')
 
                 else:
-                    print('cannot solve the equation over', var)
+                    print(f'cannot solve the equation over {var}')
 
             elif not simplified.is_number():
                 evaluated = evaluator.evalf(simplified)
                 if str(evaluated) != str(simplified):
-                    print('approximate evaluation:', evaluator.evalf(simplified))
+                    print(f'approximate evaluation: {evaluator.evalf(simplified)}')
 
         n_line += 1
         print()
 
     print('thank you for being with us')
+
 
 if __name__ == '__main__':
     main()
