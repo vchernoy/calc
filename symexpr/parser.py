@@ -145,14 +145,14 @@ def parse_product(reader, errors):
         else:
             assert False
 
-        if operation == ast.Type.mul:
+        if operation == ast.OpKind.mul:
             operands.append(tree)
-        elif operation == ast.Type.inv:
+        elif operation == ast.OpKind.inv:
             operands.append(ast.inverse(tree))
         else:
             operands.append(tree)
 
-        if (prev_tok.typ == tokenizer.Type.number) and (operation in (None, ast.Type.mul)):
+        if (prev_tok.typ == tokenizer.Type.number) and (operation in (None, ast.OpKind.mul)):
             if not find_expected(reader, all_tokens - {tokenizer.Type.number} | {tokenizer.Type.eol}, errors):
                 break
         else:
@@ -165,14 +165,14 @@ def parse_product(reader, errors):
 
         tok = reader.look_next()
         if tok.typ == tokenizer.Type.mul:
-            operation = ast.Type.mul
+            operation = ast.OpKind.mul
             reader.move_next()
         elif tok.typ == tokenizer.Type.div:
-            operation = ast.Type.inv
+            operation = ast.OpKind.inv
             reader.move_next()
         elif (prev_tok.typ == tokenizer.Type.number) and (
-                    tok.typ in [tokenizer.Type.id, tokenizer.Type.l_paren]) and (operation in [None, ast.Type.mul]):
-            operation = ast.Type.mul
+                    tok.typ in [tokenizer.Type.id, tokenizer.Type.l_paren]) and (operation in [None, ast.OpKind.mul]):
+            operation = ast.OpKind.mul
         else:
             break
 

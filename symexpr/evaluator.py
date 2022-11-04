@@ -29,13 +29,13 @@ def _add_simplify(self):
     evaluated0 = [simplify(n) for n in self.operands]
     evaluated = []
     for n in evaluated0:
-        if (n.operation == ast.Type.add) and (n.coefficient == 1) and not n.vars:
+        if (n.operation == ast.OpKind.add) and (n.coefficient == 1) and not n.vars:
             evaluated += n.operands
         else:
             evaluated.append(n)
 
-    terms = [t for t in evaluated if t.operation == ast.Type.one]
-    non_terms = [t for t in evaluated if t.operation != ast.Type.one]
+    terms = [t for t in evaluated if t.operation == ast.OpKind.one]
+    non_terms = [t for t in evaluated if t.operation != ast.OpKind.one]
 
     d = {}
     for t in terms:
@@ -73,7 +73,7 @@ def _mul_simplify(self):
     ast.incby(res_vars, self.vars)
 
     for n in evaluated0:
-        if n.operation == ast.Type.mul:
+        if n.operation == ast.OpKind.mul:
             ast.incby(res_vars, n.vars)
             res_coefficient *= n.coefficient
             evaluated1 += n.operands
@@ -82,31 +82,31 @@ def _mul_simplify(self):
 
     evaluated2 = []
     for n in evaluated1:
-        assert n.operation != ast.Type.mul
+        assert n.operation != ast.OpKind.mul
 
         ast.incby(res_vars, n.vars)
         res_coefficient *= n.coefficient
 
-        if n.operation != ast.Type.one:
+        if n.operation != ast.OpKind.one:
             evaluated2.append(simplify(ast.new(operation=n.operation, operands=n.operands)))
 
-    evaluated3 = [n for n in evaluated2 if n.operation != ast.Type.inv]
+    evaluated3 = [n for n in evaluated2 if n.operation != ast.OpKind.inv]
     inv_coefficient = 1
     for n in evaluated2:
-        assert n.operation in [ast.Type.inv, ast.Type.add, ast.Type.log]
+        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log]
         assert n.coefficient == 1
         assert not n.vars
 
-        if n.operation == ast.Type.inv:
+        if n.operation == ast.OpKind.inv:
             t = n.operands[0]
             ast.incby(res_vars, {v: -p for v, p in t.vars.items()})
             inv_coefficient *= t.coefficient
-            if t.operation != ast.Type.one:
+            if t.operation != ast.OpKind.one:
                 evaluated3.append(ast.inverse(ast.new(operation=t.operation, operands=t.operands)))
 
     evaluated = []
     for n in evaluated3:
-        assert n.operation in [ast.Type.inv, ast.Type.add, ast.Type.log]
+        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log]
         assert n.coefficient == 1
         assert not n.vars
 
@@ -116,7 +116,7 @@ def _mul_simplify(self):
     inv_vars = {v: -p for v, p in res_vars.items() if p < 0}
 
     n = ast.inverse(node=ast.term(inv_coefficient, inv_vars), variables=pos_vars, coefficient=res_coefficient)
-    if n.operation == ast.Type.one:
+    if n.operation == ast.OpKind.one:
         return ast.multiplication(evaluated, coefficient=n.coefficient, variables=n.vars)
 
     evaluated += [n]
@@ -134,14 +134,14 @@ def _inv_simplify(self):
     pos_vars = {v: p for v, p in res_vars.items() if p > 0}
     inv_vars = {v: -p for v, p in res_vars.items() if p < 0}
 
-    if evaluated.operation == ast.Type.one:
+    if evaluated.operation == ast.OpKind.one:
         return ast.inverse(
             ast.term(evaluated.coefficient, inv_vars),
             coefficient=self.coefficient,
             variables=pos_vars
         )
 
-    if evaluated.operation == ast.Type.inv:
+    if evaluated.operation == ast.OpKind.inv:
         return simplify(
             ast.multiplication(
                 nodes=[
@@ -155,9 +155,9 @@ def _inv_simplify(self):
             )
         )
 
-    if evaluated.operation == ast.Type.mul:
-        inversed_terms = [ast.inverse(t) for t in evaluated.operands if t.operation == ast.Type.inv]
-        other_terms = [t for t in evaluated.operands if t.operation != ast.Type.inv]
+    if evaluated.operation == ast.OpKind.mul:
+        inversed_terms = [ast.inverse(t) for t in evaluated.operands if t.operation == ast.OpKind.inv]
+        other_terms = [t for t in evaluated.operands if t.operation != ast.OpKind.inv]
         return simplify(
             ast.multiplication(
                 nodes=[
@@ -207,7 +207,7 @@ def _add_expand(self):
     expanded = [expand(n) for n in self.operands]
 
     node = simplify(ast.addition(nodes=expanded))
-    if node.operation != ast.Type.add:
+    if node.operation != ast.OpKind.add:
         return simplify(ast.multiplication(nodes=[term, node]))
 
     term1 = ast.term(coefficient=node.coefficient, variables=node.vars)
@@ -223,7 +223,7 @@ def _mul_expand(self):
 
     res = [ast.number(1)]
     for term in expanded:
-        if term.operation != ast.Type.add:
+        if term.operation != ast.OpKind.add:
             res = [simplify(ast.multiplication(nodes=[term, t])) for t in res]
         else:
             res2 = []

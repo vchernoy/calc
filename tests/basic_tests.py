@@ -6,9 +6,9 @@ import unittest
 
 class TestCalc(unittest.TestCase):
     def test_table(self):
-        table = [
-            '0', '000', '+0', '1', '-1', '1234', '-903341234', '13156545', '00013145353'
-        ]
+        table = (
+            '0', '000', '+0', '1', '-1', '1234', '-903341234', '13156545', '00013145353',
+        )
         for inp in table:
             expr, errors = parse(inp)
             expected = str(int(inp))
@@ -20,7 +20,7 @@ class TestCalc(unittest.TestCase):
             self.assertEqual(str(expr2), expected)
 
     def test_int_arith(self):
-        table = [
+        table = (
             ('1+2+3+4+5+6+7+8+9', '45'),
             ('-1+1' * 20, '0'),
             ('-1+2' * 20, '20'),
@@ -29,7 +29,7 @@ class TestCalc(unittest.TestCase):
             ('-1' + '*(-2)' * 10, '-1024'),
             ('*'.join(['(3-1)'] * 10), '1024'),
             ('10-20+30-40+50-60+70-80', '-40'),
-        ]
+        )
         for inp, expected in table:
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
@@ -41,7 +41,7 @@ class TestCalc(unittest.TestCase):
 
     def test_int_range(self):
         for n in range(2000):
-            for inp in [str(n), '+' + str(n), '-' + str(n)]:
+            for inp in str(n), f'+{n}', f'-{n}':
                 expected = str(int(inp))
                 expr, errors = parse(inp)
                 self.assertEqual(errors, [])
@@ -52,7 +52,7 @@ class TestCalc(unittest.TestCase):
                 self.assertEqual(str(expr2), expected)
 
     def test_float_arith(self):
-        table = [
+        table = (
             ('1.+2.+3.+4.+5.+6.+7.+8.+9.', 45.0),
             ('-1.+1.' * 20, 0.),
             ('-1.+2.' * 20, 20.0),
@@ -61,7 +61,7 @@ class TestCalc(unittest.TestCase):
             ('-1.' + '*(-2.)' * 10, -1024.0),
             ('*'.join(['(3.-1.)'] * 10), 1024.0),
             ('10.-20.+30.-40.+50.-60.+70.-80.', -40.0),
-        ]
+        )
         for inp, expected in table:
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
@@ -72,7 +72,7 @@ class TestCalc(unittest.TestCase):
             self.assertEqual(float(str(expr2)), expected)
 
     def test_numeric_arith(self):
-        table = [
+        table = (
             ('1.+2.+3.+4.+5.+6.+7.+8.+9.', 45.0),
             ('-1.+1.' * 20, 0.),
             ('-1.+2.' * 20, 20.0),
@@ -81,7 +81,7 @@ class TestCalc(unittest.TestCase):
             ('-1.' + '*(-2.)' * 10, -1024.0),
             ('*'.join(['(3.-1.)'] * 10), 1024.0),
             ('10.-20.+30.-40.+50.-60.+70.-80.', -40.0),
-        ]
+        )
         for inp, expected in table:
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
@@ -94,7 +94,7 @@ class TestCalc(unittest.TestCase):
     def test_harmonic_num(self):
         gama = 0.577265669068499
         for n in [100, 1000, 10000]:
-            inp = '+'.join([('1/' + str(j)) for j in range(1, n + 1)]) + '-log(' + str(n) + ')'
+            inp = '+'.join(('1/' + str(j)) for j in range(1, n + 1)) + '-log(' + str(n) + ')'
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
             val = float(str(evaluator.evalf(expr)))
@@ -109,7 +109,7 @@ class TestCalc(unittest.TestCase):
     def test_float_range(self):
         for m in range(2000):
             n = m / 5
-            for inp in [str(n), '+' + str(n), '-' + str(n)]:
+            for inp in str(n), f'+{n}', f'-{n}':
                 expected = float(inp)
                 expr, errors = parse(inp)
                 self.assertEqual(errors, [])
@@ -122,7 +122,7 @@ class TestCalc(unittest.TestCase):
     def test_float_e_range(self):
         for m in range(2000):
             n = m / 5
-            for inp in [str(n) + 'E-20', '+' + str(n) + 'e+10', '-' + str(n) + 'e15']:
+            for inp in str(n) + 'E-20', f'+{n}e+10', f'-{n}e15':
                 expected = float(inp)
                 expr, errors = parse(inp)
                 self.assertEqual(errors, [])
@@ -147,7 +147,7 @@ class TestCalc(unittest.TestCase):
             self.assertAlmostEqual(val2, 1, delta=0.)
 
     def test_symbolic(self):
-        for n in [1, 10, 20, 100, 101]:
+        for n in 1, 10, 20, 100, 101:
             inp = '*'.join(['(a+b)*(a-b)'] * n)
             expr, errors = parse(inp)
             exprs = [expr, evaluator.simplify(expr), evaluator.expand(expr), evaluator.expand(evaluator.simplify(expr))]
