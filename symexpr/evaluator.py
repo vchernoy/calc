@@ -2,7 +2,7 @@ import math
 import symexpr.ast as ast
 
 
-def subs(node, assignment: dict):
+def subs(node, assignment: dict[str, ast.Num]):
     """
     Substitute the values from the map into the variables of the given AST.
     subs('2x+1', x=3) => '2*3+1'
@@ -20,7 +20,7 @@ def subs(node, assignment: dict):
     return ast.new(operation=node.operation, operands=evaluated, coefficient=res_coefficient, variables=res_var)
 
 
-def subse(node, assignment: dict):
+def subse(node, assignment: dict[str, ast.Node]):
     """
     Substitute the values (given as ASTs) from the map into the variables of the given AST
     subse('2x+1', x=3y+1) => '2*(3y+1)+1'

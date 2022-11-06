@@ -253,7 +253,7 @@ def find_expected(reader, expected_tokens, errors) -> bool:
 
 class Error:
     def __init__(self, expected_tokens, received_token):
-        self.location = received_token.location
+        self.loc = received_token.loc
         self.expected_tokens = expected_tokens
         self.received_token = received_token
 
@@ -269,9 +269,9 @@ class Error:
 
         if received_token.typ == tokenizer.Type.error:
             err = received_token.err
-            self.msg = f"error @ {self.location}: invalid char: '{err.next_char}', expected tokens: {exp_toks} (chars: {err.expected_chars})"
+            self.msg = f"error @ {self.loc}: invalid char: '{err.next_char}', expected tokens: {exp_toks} (chars: {err.expected_chars})"
         else:
-            self.msg = f"error @ {self.location}: unexpected token: {received_token.typ.value}, expected tokens: {exp_toks}"
+            self.msg = f"error @ {self.loc}: unexpected token: {received_token.typ.value}, expected tokens: {exp_toks}"
 
     def __str__(self) -> str:
         return repr(self)

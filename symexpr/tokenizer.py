@@ -33,16 +33,16 @@ simple_tokens = {t.value: t for t in [
 
 
 class Error:
-    def __init__(self, loc, expected_chars, parsed_chars, next_char):
+    def __init__(self, loc: int, expected_chars, parsed_chars, next_char):
         assert type(loc) == int
 
-        self.location = loc
+        self.loc: int = loc
         self.expected_chars = expected_chars
         self.parsed_chars = parsed_chars
         self.next_char = next_char
 
     def __str__(self) -> str:
-        return f'Error @ {self.location}: expected={self.expected_chars}, parsed={self.parsed_chars}, next={self.next_char}'
+        return f'Error @ {self.loc}: expected={self.expected_chars}, parsed={self.parsed_chars}, next={self.next_char}'
 
 
 class Token:
@@ -52,18 +52,18 @@ class Token:
     If typ is Type.number, the token contains number (integer of float)
     If type is Type.error, the token contains err representing the Lexer error.
     """
-    def __init__(self, loc, typ, name=None, num=None, err=None):
+    def __init__(self, loc: int, typ: Type, name=None, num=None, err=None):
         assert type(typ) == Type
         assert type(loc) == int
 
-        self.location = loc
-        self.typ = typ
+        self.loc: int = loc
+        self.typ: Type = typ
         self.name = name
         self.number = num
         self.err = err
 
     def __repr__(self) -> str:
-        return f'({";".join(str(t) for t in [self.typ, self.name, self.number, self.err])}:{self.location})'
+        return f'({";".join(str(t) for t in [self.typ, self.name, self.number, self.err])}:{self.loc})'
 
     def __str__(self) -> str:
         if self.typ == Type.number:
@@ -78,13 +78,13 @@ class Token:
         return str(self.typ)
 
 
-def tokenize(scanner):
+def tokenize(scanner: 'Scanner'):
     """
     It is the generator that creates tokens from the scanner's output
     :param scanner:
     """
     while scanner.has_next():
-        loc = scanner.location()
+        loc = scanner.loc()
         if scanner.expected_next(simple_tokens):
             lexeme = scanner.move_next()
             yield Token(loc, simple_tokens[lexeme])
@@ -116,18 +116,18 @@ def tokenize(scanner):
                 else:
                     if scanner.has_next():
                         yield Token(
-                            loc=scanner.location(),
+                            loc=scanner.loc(),
                             typ=Type.error,
-                            err=Error(loc=scanner.location(), expected_chars=['0-9'], parsed_chars=num,
+                            err=Error(loc=scanner.loc(), expected_chars=['0-9'], parsed_chars=num,
                                       next_char=scanner.look_next())
                         )
 
                         scanner.move_next()
                     else:
                         yield Token(
-                            loc=scanner.location(),
+                            loc=scanner.loc(),
                             typ=Type.error,
-                            err=Error(loc=scanner.location(), expected_chars=['0-9'], parsed_chars=num, next_char='')
+                            err=Error(loc=scanner.loc(), expected_chars=['0-9'], parsed_chars=num, next_char='')
                         )
 
                     continue
@@ -138,7 +138,7 @@ def tokenize(scanner):
                 yield Token(
                     loc=loc,
                     typ=Type.error,
-                    err=Error(loc=scanner.location(), expected_chars=['(0-9)+[.(0-9)*][[E|e][+|-](0-9)+]'],
+                    err=Error(loc=scanner.loc(), expected_chars=['(0-9)+[.(0-9)*][[E|e][+|-](0-9)+]'],
                               parsed_chars=num, next_char=scanner.look_next())
                 )
 
@@ -154,12 +154,12 @@ def tokenize(scanner):
             yield Token(
                 loc=loc,
                 typ=Type.error,
-                err=Error(loc=scanner.location(), expected_chars='(0-9)|(a-z)|(|)|+|-|*|/|=', parsed_chars='',
+                err=Error(loc=scanner.loc(), expected_chars='(0-9)|(a-z)|(|)|+|-|*|/|=', parsed_chars='',
                           next_char=scanner.look_next())
             )
             scanner.move_next()
 
-    yield Token(scanner.location(), Type.eol)
+    yield Token(scanner.loc(), Type.eol)
 
 
 class Scanner:
@@ -167,25 +167,25 @@ class Scanner:
     Scanner provides the characters in the input stream. The scanner can look at one single character in ahead.
     """
     def __init__(self, source):
-        self.src = source
-        self.loc = -1
+        self._src = source
+        self._loc: int = -1
 
-    def location(self):
-        return self.loc + 1
+    def loc(self) -> int:
+        return self._loc + 1
 
     def look_next(self):
         if not self.has_next():
             raise Exception("no input")
 
-        return self.src[self.loc + 1]
+        return self._src[self.loc()]
 
     def move_next(self):
         tok = self.look_next()
-        self.loc += 1
+        self._loc += 1
         return tok
 
     def has_next(self):
-        return self.loc + 1 < len(self.src)
+        return self.loc() < len(self._src)
 
     def expected_next(self, expected_values):
         return self.has_next() and (self.look_next() in expected_values)

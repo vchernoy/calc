@@ -36,11 +36,11 @@ def main():
         expr = parser.parse(tok_reader, errors)
 
         if errors:
-            errors.sort(key=lambda e: e.location)
+            errors.sort(key=lambda e: e.loc)
             buf = [' '] * (len(inp) + 1)
             for err in errors:
-                buf[err.location] = '^'
-                err_loc = err.location
+                buf[err.loc] = '^'
+                err_loc = err.loc
 
             print(inp)
             print(''.join(buf))
