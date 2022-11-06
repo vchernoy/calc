@@ -27,7 +27,13 @@ var_set = set[str]
 
 
 class Node:
-    def __init__(self, operation: OpKind, coefficient: numeric = 1, variables: var_term = None, operands = None):
+    def __init__(
+            self,
+            operation: OpKind,
+            coefficient: numeric = 1,
+            variables: var_term = None,
+            operands: list['Node'] = None
+    ):
         assert type(operation) == OpKind
         assert type(coefficient) in (float, int)
 
@@ -36,7 +42,7 @@ class Node:
 
         self.operation: OpKind = operation
         self.coefficient: numeric = coefficient
-        self.operands: list = operands if operands else []
+        self.operands: list['Node'] = operands if operands else []
 
         assert type(self.operands) == list
 
@@ -66,8 +72,8 @@ class Node:
 
         return f'[{r}]'
 
-    def to_str(self, in_parenthesis: bool = False) -> str:
-        raise to_str(self) if in_parenthesis else str(self)
+    def __str__(self, in_parenthesis: bool = False) -> str:
+        raise NotImplemented()
 
 
 class Add(Node):
@@ -89,7 +95,7 @@ class Add(Node):
     def is_term(self) -> bool:
         return False
 
-    def __str__(self) -> str:
+    def __str__(self, in_parenthesis: bool = False) -> str:
         res = ''
         if self.coefficient == -1:
             res = '-'
@@ -99,15 +105,15 @@ class Add(Node):
         if self.vars:
             res += _vars_to_str(self) + '*'
 
-        in_extra_parenthesis = res != ''
-        if in_extra_parenthesis:
+        extra_parenthesis = res != ''
+        if extra_parenthesis:
             res += '('
 
-        res += '+'.join(to_str(n) for n in self.operands)
-        if in_extra_parenthesis:
+        res += '+'.join(n.__str__(True) for n in self.operands)
+        if extra_parenthesis:
             res += ')'
 
-        return res
+        return f'({res})' if in_parenthesis else res
 
 
 class Mul(Node):
@@ -129,7 +135,7 @@ class Mul(Node):
     def is_term(self) -> bool:
         return False
 
-    def __str__(self) -> str:
+    def __str__(self, in_parenthesis: bool = False) -> str:
         res = ''
         if self.coefficient == -1:
             res = '-'
@@ -139,11 +145,11 @@ class Mul(Node):
         if self.vars:
             res += _vars_to_str(self) + '*('
 
-        res += '*'.join(to_str(n) for n in self.operands)
+        res += '*'.join(n.__str__(True) for n in self.operands)
         if self.vars:
             res += ')'
 
-        return res
+        return f'({res})' if in_parenthesis else res
 
 
 class Inv(Node):
@@ -165,7 +171,7 @@ class Inv(Node):
     def is_term(self) -> bool:
         return self.operands[0].is_number()
 
-    def __str__(self) -> str:
+    def __str__(self, in_parenthesis: bool = False) -> str:
         if (self.coefficient == -1) and self.vars:
             res = '-'
         elif (self.coefficient != 1) or not self.vars:
@@ -174,9 +180,9 @@ class Inv(Node):
             res = ''
 
         res += _vars_to_str(self)
-        res += '/' + to_str(self.operands[0])
+        res += '/' + self.operands[0].__str__(True)
 
-        return res
+        return f'({res})' if in_parenthesis else res
 
 
 class One(Node):
@@ -197,7 +203,7 @@ class One(Node):
     def is_term(self) -> bool:
         return True
 
-    def __str__(self) -> str:
+    def __str__(self, in_parenthesis: bool = False) -> str:
         res = ''
         if (self.coefficient == -1) and self.vars:
             res = '-'
@@ -205,16 +211,9 @@ class One(Node):
             res = str(self.coefficient)
 
         res += _vars_to_str(self)
+        around_parenthesis = in_parenthesis and ((self.coefficient != 1 and self.vars) or (self.coefficient < 0))
+        return f'({res})' if around_parenthesis else res
 
-        # around_parenthesis = ((self.coefficient != 1) and self.vars) or (self.coefficient < 0)
-        # if around_parenthesis:
-        #     res = f'({res})'
-
-        return res
-
-    def to_str(self, in_parenthesis: bool = False) -> str:
-        around_parenthesis = in_parenthesis and (((self.coefficient != 1) and self.vars) or (self.coefficient < 0))
-        return to_str(self) if around_parenthesis else str(self)
 
 
 class Log(Node):
@@ -236,7 +235,7 @@ class Log(Node):
     def is_term(self) -> bool:
         return self.operands[0].is_number()
 
-    def __str__(self) -> str:
+    def __str__(self, in_parenthesis: bool = False) -> str:
         res = ''
         if self.coefficient == -1:
             res = '-'
@@ -246,9 +245,9 @@ class Log(Node):
         if self.vars:
             res += _vars_to_str(self) + '*'
 
-        res += 'log ' + to_str(self.operands[0])
+        res += 'log ' + self.operands[0].__str__(True)
 
-        return res
+        return f'({res})' if in_parenthesis else res
 
 
 def new(operation, coefficient: numeric = 1, variables: dict = None, operands: list = None):
@@ -386,7 +385,3 @@ def incby(acc_vars: dict[str, int], added_vars: dict[str, int]):
         acc_vars[var] = acc_vars.setdefault(var, 0) + power
         if acc_vars[var] == 0:
             del acc_vars[var]
-
-
-def to_str(node) -> str:
-    return f'({node})'
