@@ -19,6 +19,7 @@ class OpKind(enum.Enum):
     mul = 3
     inv = 4
     log = 5
+    exp = 6
 
 
 Num: typing.TypeAlias = int | float
@@ -248,6 +249,39 @@ class Log(Node):
 
         return f'({res})' if in_parenthesis else res
 
+class Exp(Node):
+    """
+    Represents coefficient * {x^k for (x,k) in vars} * exp operands[0].
+    For examples:
+      2x*x*y * exp expr could be represented by one Exp-node
+    """
+    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
+        super().__init__(OpKind.exp, coefficient, variables, operands)
+        assert len(self.operands) == 1
+
+    def degree(self, var: str = None) -> int:
+        return _degree(self, var)
+
+    def is_number(self) -> bool:
+        return False
+
+    def is_term(self) -> bool:
+        return self.operands[0].is_number()
+
+    def __str__(self, in_parenthesis: bool = False) -> str:
+        res = ''
+        if self.coefficient == -1:
+            res = '-'
+        elif self.coefficient != 1:
+            res = str(self.coefficient)
+
+        if self.vars:
+            res += _vars_to_str(self) + '*'
+
+        res += 'exp ' + self.operands[0].__str__(True)
+
+        return f'({res})' if in_parenthesis else res
+
 
 def new(operation, coefficient: Num = 1, variables: dict = None, operands: list = None):
     """
@@ -268,6 +302,9 @@ def new(operation, coefficient: Num = 1, variables: dict = None, operands: list 
 
     if operation == OpKind.log:
         return logarithm(operands[0], variables, coefficient)
+
+    if operation == OpKind.exp:
+        return exponent(operands[0], variables, coefficient)
 
     assert False
 
@@ -367,6 +404,12 @@ def logarithm(node, variables: dict = None, coefficient: Num = 1):
 
     return Log(operands=[node], variables=variables, coefficient=coefficient)
 
+
+def exponent(node, variables: dict = None, coefficient: Num = 1):
+    if not node:
+        return term(coefficient=coefficient, variables=variables)
+
+    return Exp(operands=[node], variables=variables, coefficient=coefficient)
 
 def _vars_to_str(node) -> str:
     return '*'.join(itertools.chain.from_iterable([v] * d for v,d in sorted(node.vars.items())))

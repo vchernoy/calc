@@ -119,6 +119,7 @@ def parse_product(reader, errors):
     P := num (ID | F | PE) ('*'|'/' P)*
     P := (ID | F | PE) ('*'|'/' P)*
     F := 'log' SP
+    F := 'exp' SP
     :param reader:
     :param errors:
     :return: AST
@@ -134,6 +135,8 @@ def parse_product(reader, errors):
             name = reader.move_next().name
             if name == 'log':
                 tree = ast.logarithm(parse_short_product(reader, errors))
+            elif name == 'exp':
+                tree = ast.exponent(parse_short_product(reader, errors))
             else:
                 tree = ast.variable(name)
 
@@ -189,6 +192,7 @@ def parse_short_product(reader, errors):
     SP := ID
     SP := F
     F := 'log' SP
+    F := 'exp' SP
     :param reader:
     :param errors:
     :return: AST
@@ -208,6 +212,8 @@ def parse_short_product(reader, errors):
         name = reader.move_next().name
         if name == 'log':
             operands.append(ast.logarithm(parse_short_product(reader, errors)))
+        elif name == 'exp':
+            operands.append(ast.exponent(parse_short_product(reader, errors)))
         else:
             operands.append(ast.variable(name))
 

@@ -20,6 +20,7 @@ def simplify(self):
 
 @simplify.register(ast.One)
 @simplify.register(ast.Log)
+@simplify.register(ast.Exp)
 def _simplify(self):
     return self
 
@@ -93,7 +94,7 @@ def _mul_simplify(self):
     evaluated3 = [n for n in evaluated2 if n.operation != ast.OpKind.inv]
     inv_coefficient = 1
     for n in evaluated2:
-        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log]
+        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp]
         assert n.coefficient == 1
         assert not n.vars
 
@@ -106,7 +107,7 @@ def _mul_simplify(self):
 
     evaluated = []
     for n in evaluated3:
-        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log]
+        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp]
         assert n.coefficient == 1
         assert not n.vars
 
@@ -196,6 +197,7 @@ def expand(self):
 
 @expand.register(ast.Inv)
 @expand.register(ast.Log)
+@expand.register(ast.Exp)
 @expand.register(ast.One)
 def _expand(self):
     return self
@@ -272,6 +274,16 @@ def _mul_solve(self, var):
 
 @solve.register(ast.Log)
 def _log_solve(self, var):
+    if var not in self.variables():
+        return None
+
+    if var in self.operands[0].variables():
+        return None
+
+    return ast.number(0), ast.variable(var)
+
+@solve.register(ast.Exp)
+def _exp_solve(self, var):
     if var not in self.variables():
         return None
 
@@ -416,6 +428,18 @@ def _log_evalf(self):
             return ast.term(coefficient=val, variables=self.vars)
 
         return ast.logarithm(scalars[0], coefficient=self.coefficient, variables=self.vars)
+
+    return ast.logarithm(non_scalars[0], coefficient=self.coefficient, variables=self.vars)
+
+
+@evalf.register(ast.Exp)
+def _exp_evalf(self):
+    evaluated = [evalf(n) for n in self.operands]
+    scalars = [n for n in evaluated if n.is_number()]
+    non_scalars = [n for n in evaluated if not n.is_number()]
+    if scalars:
+        val = self.coefficient * math.exp(scalars[0].coefficient)
+        return ast.term(coefficient=val, variables=self.vars)
 
     return ast.logarithm(non_scalars[0], coefficient=self.coefficient, variables=self.vars)
 
