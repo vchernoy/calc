@@ -21,35 +21,35 @@ class OpKind(enum.Enum):
     log = 5
 
 
-numeric: typing.TypeAlias = int|float
-var_term: typing.TypeAlias = dict[str, int]
-var_set = set[str]
-
+Num: typing.TypeAlias = int | float
+VarTerm: typing.TypeAlias = dict[str, int]
+Vars: typing.TypeAlias = set[str]
+Nodes: typing.TypeAlias = list['Node']
 
 class Node:
     def __init__(
             self,
             operation: OpKind,
-            coefficient: numeric = 1,
-            variables: var_term = None,
-            operands: list['Node'] = None
+            coefficient: Num = 1,
+            variables: VarTerm = None,
+            operands: Nodes = None
     ):
         assert type(operation) == OpKind
         assert type(coefficient) in (float, int)
 
-        self.vars = {}
+        self.vars: VarTerm = {}
         incby(self.vars, variables)
 
         self.operation: OpKind = operation
-        self.coefficient: numeric = coefficient
-        self.operands: list['Node'] = operands if operands else []
+        self.coefficient: Num = coefficient
+        self.operands: Nodes = operands if operands else []
 
         assert type(self.operands) == list
 
     def degree(self, var: str = None) -> int:
         raise NotImplemented()
 
-    def variables(self) -> var_set:
+    def variables(self) -> Vars:
         res = set(self.vars.keys())
         for n in self.operands:
             res.update(n.variables())
@@ -82,7 +82,7 @@ class Add(Node):
     For examples:
       2x*x*y*(expr1 + expr2 + expr3 + ... + exprn) could be represented by one Add-node
     """
-    def __init__(self, coefficient: numeric = 1, variables: var_term = None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables: VarTerm = None, operands=None):
         super().__init__(OpKind.add, coefficient, variables, operands)
         assert len(self.operands) >= 2
 
@@ -122,7 +122,7 @@ class Mul(Node):
     For examples:
       2x*x*y * expr1 * expr2 * expr3 * ... * exprn could be represented by one Mul-node
     """
-    def __init__(self, coefficient: numeric = 1, variables=None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
         super().__init__(OpKind.mul, coefficient, variables, operands)
         assert len(self.operands) >= 2
 
@@ -158,7 +158,7 @@ class Inv(Node):
     For examples:
       2x*x*y / expr could be represented by one Inv-node
     """
-    def __init__(self, coefficient: numeric = 1, variables=None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
         super().__init__(OpKind.inv, coefficient, variables, operands)
         assert len(self.operands) == 1
 
@@ -191,7 +191,7 @@ class One(Node):
     For examples:
       2x*x*y could be represented by one One-node
     """
-    def __init__(self, coefficient: numeric = 1, variables=None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
         super().__init__(OpKind.one, coefficient, variables)
 
     def degree(self, var:str = None) -> int:
@@ -215,14 +215,13 @@ class One(Node):
         return f'({res})' if around_parenthesis else res
 
 
-
 class Log(Node):
     """
     Represents coefficient * {x^k for (x,k) in vars} * log operands[0].
     For examples:
       2x*x*y * log expr could be represented by one Log-node
     """
-    def __init__(self, coefficient: numeric = 1, variables=None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
         super().__init__(OpKind.log, coefficient, variables, operands)
         assert len(self.operands) == 1
 
@@ -250,7 +249,7 @@ class Log(Node):
         return f'({res})' if in_parenthesis else res
 
 
-def new(operation, coefficient: numeric = 1, variables: dict = None, operands: list = None):
+def new(operation, coefficient: Num = 1, variables: dict = None, operands: list = None):
     """
     Factory methods to create nodes of different types.
     """
@@ -273,7 +272,7 @@ def new(operation, coefficient: numeric = 1, variables: dict = None, operands: l
     assert False
 
 
-def term(coefficient: numeric, variables: dict = None):
+def term(coefficient: Num, variables: dict = None):
     if coefficient == 0:
         return number(0)
 
@@ -283,7 +282,7 @@ def term(coefficient: numeric, variables: dict = None):
     return One(coefficient=coefficient, variables=variables)
 
 
-def number(value: numeric):
+def number(value: Num):
     return One(coefficient=value)
 
 
@@ -291,7 +290,7 @@ def variable(name: str):
     return One(variables={name: 1})
 
 
-def addition(nodes, variables: dict = None, coefficient: numeric = 1):
+def addition(nodes, variables: dict = None, coefficient: Num = 1):
     if coefficient == 0:
         return number(0)
 
@@ -311,7 +310,7 @@ def addition(nodes, variables: dict = None, coefficient: numeric = 1):
     return Add(operands=nodes, variables=variables, coefficient=coefficient)
 
 
-def multiplication(nodes, variables: dict = None, coefficient: numeric = 1):
+def multiplication(nodes, variables: dict = None, coefficient: Num = 1):
     if coefficient == 0:
         return number(0)
 
@@ -336,7 +335,7 @@ def negative(node):
                variables=node.vars) if node else None
 
 
-def inverse(node, variables: dict = None, coefficient: numeric = 1):
+def inverse(node, variables: dict = None, coefficient: Num = 1):
     if coefficient == 0:
         return number(0)
 
@@ -362,7 +361,7 @@ def inverse(node, variables: dict = None, coefficient: numeric = 1):
     return Inv(operands=[node], variables=variables, coefficient=coefficient)
 
 
-def logarithm(node, variables: dict = None, coefficient: numeric = 1):
+def logarithm(node, variables: dict = None, coefficient: Num = 1):
     if not node:
         return term(coefficient=coefficient, variables=variables)
 
@@ -377,11 +376,11 @@ def _degree(node, var: str = None) -> int:
     return node.vars.get(var, 0) if var else sum(node.vars.values())
 
 
-def incby(acc_vars: dict[str, int], added_vars: dict[str, int]):
+def incby(acc_vars: VarTerm, added_vars: VarTerm):
     if not added_vars:
         return
 
-    for var, power in added_vars.items():
-        acc_vars[var] = acc_vars.setdefault(var, 0) + power
-        if acc_vars[var] == 0:
-            del acc_vars[var]
+    for v, p in added_vars.items():
+        acc_vars[v] = acc_vars.setdefault(v, 0) + p
+        if acc_vars[v] == 0:
+            del acc_vars[v]
