@@ -2,6 +2,8 @@ import random
 import symexpr.tokenizer as tokenizer
 import symexpr.parser as parser
 import symexpr.evaluator as evaluator
+import symexpr.evaluators as evaluators
+
 
 """
 The interactive symbolic calculator.
@@ -13,10 +15,10 @@ It will prompt for input string (expression)
 
 def all_ways_to_compute(expr) -> list:
     return [
-        evaluator.simplify(expr),
-        evaluator.expand(evaluator.simplify(expr)),
-        evaluator.evalf(evaluator.expand(evaluator.simplify(expr))),
-        evaluator.simplify(evaluator.evalf(evaluator.expand(evaluator.simplify(expr)))),
+        evaluators.simplify(expr),
+        evaluators.expand(evaluators.simplify(expr)),
+        evaluators.evalf(evaluators.expand(evaluators.simplify(expr))),
+        evaluators.simplify(evaluators.evalf(evaluators.expand(evaluators.simplify(expr)))),
     ]
 
 
@@ -64,7 +66,7 @@ def main():
 
                 print(f'trying to solve equation on variable {var}')
 
-                solve_res = evaluator.solve(simplified, var)
+                solve_res = evaluators.solve(simplified, var)
                 if solve_res:
                     root, root_expr = solve_res
                     sols = all_ways_to_compute(root) + [root]
@@ -73,9 +75,9 @@ def main():
                     print(f'solution: {root_expr} = {sol}')
 
                     if not sol.is_number():
-                        evaluated_sol = evaluator.evalf(sol)
+                        evaluated_sol = evaluators.evalf(sol)
                         if str(evaluated_sol) != str(sol):
-                            print(f'approximate solution: root_expr = {evaluator.evalf(sol)}')
+                            print(f'approximate solution: root_expr = {evaluators.evalf(sol)}')
 
                     if root_expr.degree() == 1:
                         print('checking the solution...')
@@ -114,9 +116,9 @@ def main():
                     print(f'cannot solve the equation over {var}')
 
             elif not simplified.is_number():
-                evaluated = evaluator.evalf(simplified)
+                evaluated = evaluators.evalf(simplified)
                 if str(evaluated) != str(simplified):
-                    print(f'approximate evaluation: {evaluator.evalf(simplified)}')
+                    print(f'approximate evaluation: {evaluators.evalf(simplified)}')
 
         n_line += 1
         print()

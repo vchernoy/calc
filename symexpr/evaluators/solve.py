@@ -1,6 +1,6 @@
 import functools
 import symexpr.ast as ast
-from symexpr.expand import expand
+from symexpr.evaluators.expand import expand
 
 
 """

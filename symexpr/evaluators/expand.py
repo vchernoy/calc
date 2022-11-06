@@ -1,6 +1,6 @@
 import functools
 import symexpr.ast as ast
-from symexpr.simplify import simplify
+from symexpr.evaluators.simplify import simplify
 
 
 """
