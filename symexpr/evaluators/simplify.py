@@ -1,6 +1,5 @@
 import functools
 import itertools
-
 import symexpr.ast as ast
 
 
@@ -27,7 +26,7 @@ def _add_simplify(expr):
     evaluated0 = [simplify(n) for n in expr.operands]
     evaluated = []
     for n in evaluated0:
-        if (n.operation == ast.OpKind.add) and (n.coefficient == 1) and not n.vars:
+        if n.operation == ast.OpKind.add and n.coefficient == 1 and not n.vars:
             evaluated += n.operands
         else:
             evaluated.append(n)
@@ -43,10 +42,7 @@ def _add_simplify(expr):
         else:
             d[k] = t
 
-        if d[k].coefficient == 0:
-            del d[k]
-
-    evaluated = list(d.values()) + non_terms
+    evaluated = [t for t in d.values() if t.coefficient != 0] + non_terms
 
     pos_degree = {}
     for t in evaluated:
@@ -117,7 +113,6 @@ def _mul_simplify(expr):
 
     return ast.mul(evaluated, coefficient=n.coefficient, variables=n.vars) if n.operation == ast.OpKind.one \
         else ast.mul(evaluated+[n])
-
 
 
 @simplify.register(ast.Inv)

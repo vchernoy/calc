@@ -10,7 +10,7 @@ def evalf(expr):
     :param expr: AST
     :return: AST
     """
-    raise TypeError("cannot evalf", expr)
+    raise TypeError('cannot evalf {expr}')
 
 
 @evalf.register(ast.One)
