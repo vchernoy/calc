@@ -4,7 +4,7 @@ import symexpr.ast as ast
 
 
 @functools.singledispatch
-def simplify(expr):
+def simplify(expr) -> ast.Node:
     """
     simplifies the given AST, performs basic transformation, does not open parentheses in a(b+c),
     but can evaluators a + b + c or a * b * c
@@ -17,12 +17,12 @@ def simplify(expr):
 @simplify.register(ast.One)
 @simplify.register(ast.Log)
 @simplify.register(ast.Exp)
-def _simplify(expr):
+def _simplify(expr) -> ast.Node:
     return expr
 
 
-@simplify.register(ast.Add)
-def _add_simplify(expr):
+@simplify.register
+def _add_simplify(expr: ast.Add) -> ast.Node:
     evaluated0 = [simplify(n) for n in expr.operands]
     evaluated = []
     for n in evaluated0:
@@ -57,8 +57,8 @@ def _add_simplify(expr):
     )
 
 
-@simplify.register(ast.Mul)
-def _mul_simplify(expr):
+@simplify.register
+def _mul_simplify(expr: ast.Mul) -> ast.Node:
     evaluated0 = [simplify(n) for n in expr.operands]
     evaluated1 = []
 
@@ -115,8 +115,8 @@ def _mul_simplify(expr):
         else ast.mul(evaluated+[n])
 
 
-@simplify.register(ast.Inv)
-def _inv_simplify(expr):
+@simplify.register
+def _inv_simplify(expr: ast.Inv) -> ast.Node:
     evaluated = simplify(expr.operands[0])
 
     res_vars = {}

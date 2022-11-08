@@ -3,7 +3,7 @@ import itertools
 import symexpr.ast as ast
 
 
-def subs(expr: ast.Node, assignment: dict[str, ast.Num]):
+def subs(expr: ast.Node, assignment: dict[str, ast.Num]) -> ast.Node:
     """
     Substitute the values from the map into the variables of the given AST.
     subs('2x+1', x=3) => '2*3+1'
@@ -25,7 +25,7 @@ def subs(expr: ast.Node, assignment: dict[str, ast.Num]):
     )
 
 
-def subse(expr: ast.Node, assignment: dict[str, ast.Node]):
+def subse(expr: ast.Node, assignment: dict[str, ast.Node]) -> ast.Node:
     """
     Substitute the values (given as ASTs) from the map into the variables of the given AST
     subse('2x+1', x=3y+1) => '2*(3y+1)+1'

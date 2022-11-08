@@ -4,7 +4,7 @@ from symexpr.evaluators.expand import expand
 
 
 @functools.singledispatch
-def solve(expr, var: str):
+def solve(expr, var: str) -> ast.Node:
     """
     Tries to solve the equation given in the form of AST.
     solve('2x-10') => ('5', 'x') meaning that x=5 is the root of 2x-10=0
@@ -14,19 +14,19 @@ def solve(expr, var: str):
     :param var: to find root for this variable
     :return: a pair (solution as AST, variable as AST) or None if failed to solve
     """
-    raise TypeError('cannot solve {expr} over {var}')
+    raise TypeError(f'cannot solve {expr} over {var}')
 
 
-@solve.register(ast.One)
-def _one_solve(expr, var: str):
+@solve.register
+def _one_solve(expr: ast.One, var: str) -> (ast.Node, ast.Node):
     if var not in ast.all_vars(expr):
         return None
 
     return ast.number(0), ast.variable(var)
 
 
-@solve.register(ast.Mul)
-def _mul_solve(expr, var: str):
+@solve.register
+def _mul_solve(expr: ast.Mul, var: str) -> (ast.Node, ast.Node):
     if var not in ast.all_vars(expr):
         return None
 
@@ -37,8 +37,8 @@ def _mul_solve(expr, var: str):
     return ast.number(0), ast.variable(var)
 
 
-@solve.register(ast.Log)
-def _log_solve(expr, var: str):
+@solve.register
+def _log_solve(expr: ast.Log, var: str) -> (ast.Node, ast.Node):
     if var not in ast.all_vars(expr):
         return None
 
@@ -47,19 +47,8 @@ def _log_solve(expr, var: str):
 
     return ast.number(0), ast.variable(var)
 
-@solve.register(ast.Exp)
-def _exp_solve(expr, var):
-    if var not in ast.all_vars(expr):
-        return None
-
-    if var in ast.all_vars(expr.operands[0]):
-        return None
-
-    return ast.number(0), ast.variable(var)
-
-
-@solve.register(ast.Inv)
-def _inv_solve(expr, var: str):
+@solve.register
+def _exp_solve(expr: ast.Exp, var: str) -> (ast.Node, ast.Node):
     if var not in ast.all_vars(expr):
         return None
 
@@ -69,8 +58,19 @@ def _inv_solve(expr, var: str):
     return ast.number(0), ast.variable(var)
 
 
-@solve.register(ast.Add)
-def _add_solve(expr, var: str):
+@solve.register
+def _inv_solve(expr: ast.Inv, var: str) -> (ast.Node, ast.Node):
+    if var not in ast.all_vars(expr):
+        return None
+
+    if var in ast.all_vars(expr.operands[0]):
+        return None
+
+    return ast.number(0), ast.variable(var)
+
+
+@solve.register
+def _add_solve(expr: ast.Add, var: str) -> (ast.Node, ast.Node):
     if var not in ast.all_vars(expr):
         return None
 

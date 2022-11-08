@@ -4,7 +4,7 @@ from symexpr.evaluators.simplify import simplify
 
 
 @functools.singledispatch
-def expand(expr):
+def expand(expr) -> ast.Node:
     """
     Opens parentheses if meets a(b + x)
     :param expr: AST
@@ -17,12 +17,12 @@ def expand(expr):
 @expand.register(ast.Log)
 @expand.register(ast.Exp)
 @expand.register(ast.One)
-def _expand(expr):
+def _expand(expr) -> ast.Node:
     return expr
 
 
-@expand.register(ast.Add)
-def _add_expand(expr):
+@expand.register
+def _add_expand(expr: ast.Add) -> ast.Node:
     term = ast.term(coefficient=expr.coefficient, variables=expr.vars)
     expanded = [expand(n) for n in expr.operands]
 
@@ -36,8 +36,8 @@ def _add_expand(expr):
     return simplify(ast.add(terms))
 
 
-@expand.register(ast.Mul)
-def _mul_expand(expr):
+@expand.register
+def _mul_expand(expr: ast.Mul) -> ast.Node:
     term = ast.term(coefficient=expr.coefficient, variables=expr.vars)
     expanded = [term] + [expand(n) for n in expr.operands]
 
