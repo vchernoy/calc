@@ -1,7 +1,6 @@
 import random
 import symexpr.tokenizer as tokenizer
 import symexpr.parser as parser
-import symexpr.evaluator as evaluator
 import symexpr.evaluators as evaluators
 
 
@@ -81,7 +80,7 @@ def main():
 
                     if root_expr.degree() == 1:
                         print('checking the solution...')
-                        subs_ast = evaluator.subse(simplified, {var: sol})
+                        subs_ast = evaluators.subse(simplified, {var: sol})
                         # print 'substituted the solution to the expression: ', subs_ast
                         subs_attempts = all_ways_to_compute(subs_ast)
                         subs_attempts.sort(key=lambda n: len(str(n)))
@@ -97,7 +96,7 @@ def main():
                             print("let's generate random assignments for them...")
                             assignment = {v: random.uniform(-1000, 1000) for v in free_vars}
                             print(f'the generated assignment to be substituted is {assignment}')
-                            final_ast = evaluator.subs(simplified_subs, assignment)
+                            final_ast = evaluators.subs(simplified_subs, assignment)
                             final_attempts = all_ways_to_compute(final_ast)
                             final_attempts.sort(key=lambda n: len(str(n)))
                             final_subs = final_attempts[0]

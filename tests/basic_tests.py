@@ -1,6 +1,5 @@
 import symexpr.tokenizer as tokenizer
 import symexpr.parser as parser
-import symexpr.evaluator as evaluator
 import symexpr.evaluators as evaluators
 import unittest
 
@@ -155,7 +154,7 @@ class TestCalc(unittest.TestCase):
             for assignment in [{'a': 2, 'b': 1}]:
                 expected = (assignment['a'] ** 2 - assignment['b'] ** 2) ** n
                 for expr in exprs:
-                    expr0 = evaluator.subs(expr, assignment)
+                    expr0 = evaluators.subs(expr, assignment)
                     val = str(evaluators.simplify(expr0))
                     self.assertEqual(val, str(expected))
 
