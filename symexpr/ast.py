@@ -83,9 +83,9 @@ class Node:
 
 class Add(Node):
     """
-    Represents coefficient * {x^k for (x,k) in vars} * sum(operands).
+    Represents coefficient * {x^k for x,k in vars} * sum(operands).
     For examples:
-      2x*x*y*(expr1 + expr2 + expr3 + ... + exprn) could be represented by one Add-node
+      2x*x*y*(expr1 + expr2 + ... + exprn) could be represented by one Add-node
     """
     def __init__(self, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None):
         super().__init__(OpKind.add, coefficient, variables, operands)
@@ -123,9 +123,9 @@ class Add(Node):
 
 class Mul(Node):
     """
-    Represents coefficient * {x^k for (x,k) in vars} * product(operands).
+    Represents coefficient * {x^k for x,k in vars} * product(operands).
     For examples:
-      2x*x*y * expr1 * expr2 * expr3 * ... * exprn could be represented by one Mul-node
+      2x*x*y * expr1 * expr2 * ... * exprn could be represented by one Mul-node
     """
     def __init__(self, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None):
         super().__init__(OpKind.mul, coefficient, variables, operands)
@@ -192,7 +192,7 @@ class Inv(Node):
 
 class One(Node):
     """
-    Represents coefficient * {x^k for (x,k) in vars}.
+    Represents coefficient * {x^k for x,k in vars}.
     For examples:
       2x*x*y could be represented by one One-node
     """
@@ -222,7 +222,7 @@ class One(Node):
 
 class Log(Node):
     """
-    Represents coefficient * {x^k for (x,k) in vars} * log operands[0].
+    Represents coefficient * {x^k for x,k in vars} * log operands[0].
     For examples:
       2x*x*y * log expr could be represented by one Log-node
     """
@@ -256,7 +256,7 @@ class Log(Node):
 
 class Exp(Node):
     """
-    Represents coefficient * {x^k for (x,k) in vars} * exp operands[0].
+    Represents coefficient * {x^k for x,k in vars} * exp operands[0].
     For examples:
       2x*x*y * exp expr could be represented by one Exp-node
     """
@@ -325,8 +325,22 @@ def number(value: Num) -> One:
     return One(coefficient=value)
 
 
-def variable(name: str) -> One:
-    return One(variables={name: 1})
+def variable(name: str, power: int = 1) -> One:
+    return One(variables={name: power})
+
+
+def new_with(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> Node:
+    if coefficient == 0:
+        return number(0)
+
+    if not variables:
+        res_vars = expr.vars
+    else:
+        res_vars = {}
+        incby(res_vars, variables)
+        incby(res_vars, expr.vars)
+
+    return new(operation=expr.operation, coefficient=coefficient * expr.coefficient, variables=res_vars, operands=expr.operands)
 
 
 def add(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1) -> Node:
@@ -337,15 +351,8 @@ def add(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1) -> Nod
     if not operands:
         return number(0)
 
-    res_vars = {}
-    incby(res_vars, variables)
-
-    if len(operands) == 1:
-        expr = operands[0]
-        incby(res_vars, expr.vars)
-        return new(operation=expr.operation, coefficient=coefficient * expr.coefficient, variables=res_vars, operands=expr.operands)
-
-    return Add(operands=operands, variables=variables, coefficient=coefficient)
+    return Add(operands=operands, variables=variables, coefficient=coefficient) if len(operands) > 1 \
+        else new_with(operands[0], variables, coefficient)
 
 
 def mul(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1) -> Node:
@@ -356,20 +363,12 @@ def mul(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1) -> Nod
     if not operands:
         return term(coefficient=coefficient, variables=variables)
 
-    res_vars = {}
-    incby(res_vars, variables)
-
-    if len(operands) == 1:
-        expr = operands[0]
-        incby(res_vars, expr.vars)
-        return new(operation=expr.operation, coefficient=coefficient * expr.coefficient, variables=res_vars, operands=expr.operands)
-
-    return Mul(operands=operands, variables=variables, coefficient=coefficient)
+    return Mul(operands=operands, variables=variables, coefficient=coefficient) if len(operands) > 1 \
+        else new_with(operands[0], variables, coefficient)
 
 
 def neg(expr: Node) -> Node | None:
-    return new(operation=expr.operation, coefficient=-expr.coefficient, operands=expr.operands, variables=expr.vars) if expr \
-        else None
+    return new_with(expr=expr, coefficient=-1)  if expr else None
 
 
 def inv(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> One | Inv:
