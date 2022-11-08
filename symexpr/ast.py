@@ -408,10 +408,6 @@ def exp(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> One | Ex
         else term(coefficient=coefficient, variables=variables)
 
 
-def _vars_to_str(expr: Node) -> str:
-    return '*'.join(itertools.chain.from_iterable([v] * d for v,d in sorted(expr.vars.items())))
-
-
 def _degree(expr: Node, var: str = None) -> int:
     return expr.vars.get(var, 0) if var else sum(expr.vars.values())
 
