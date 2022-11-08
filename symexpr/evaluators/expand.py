@@ -10,15 +10,25 @@ def expand(expr) -> ast.Node:
     :param expr: AST
     :return: AST
     """
-    raise TypeError("cannot expand", expr)
+    raise TypeError(f'cannot expand {expr}')
+
+
+@expand.register
+def one_expand(expr: ast.One) -> ast.Node:
+    return expr
 
 
 @expand.register(ast.Inv)
 @expand.register(ast.Log)
 @expand.register(ast.Exp)
-@expand.register(ast.One)
 def _expand(expr) -> ast.Node:
-    return expr
+    evaluated = [expand(n) for n in expr.operands]
+    return ast.new(
+        operation=expr.operation,
+        variables=expr.vars,
+        operands=evaluated,
+        coefficient=expr.coefficient
+    )
 
 
 @expand.register

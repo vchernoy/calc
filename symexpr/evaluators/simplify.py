@@ -14,11 +14,62 @@ def simplify(expr) -> ast.Node:
     raise TypeError("cannot evaluators", expr)
 
 
-@simplify.register(ast.One)
-@simplify.register(ast.Log)
-@simplify.register(ast.Exp)
-def _simplify(expr) -> ast.Node:
+@simplify.register
+def _one_simplify(expr: ast.One) -> ast.Node:
     return expr
+
+
+@simplify.register
+def _exp_simplify(expr: ast.Exp) -> ast.Node:
+    evaluated = simplify(expr.operands[0])
+
+    if evaluated.operation == ast.OpKind.add:
+        return ast.mul(
+            operands=[
+                ast.exp(ast.add([n], variables=evaluated.vars, coefficient=evaluated.coefficient)) for n in evaluated.operands
+            ],
+            variables=expr.vars,
+            coefficient=expr.coefficient
+        )
+
+    if evaluated.operation == ast.OpKind.log and not evaluated.vars and evaluated.coefficient == 1:
+        return ast.add(
+            variables=expr.vars,
+            operands=[evaluated.operands[0]],
+            coefficient=expr.coefficient
+        )
+
+    return ast.new(
+        operation=expr.operation,
+        variables=expr.vars,
+        operands=[evaluated],
+        coefficient=expr.coefficient
+    )
+
+
+@simplify.register
+def _log_simplify(expr: ast.Log) -> ast.Node:
+    evaluated = simplify(expr.operands[0])
+    if evaluated.operation in (ast.OpKind.exp, ast.OpKind.mul, ast.OpKind.one, ast.OpKind.inv):
+        nodes = []
+        nodes.append(ast.log(ast.number(evaluated.coefficient))) if evaluated.coefficient != 1 else ...
+        nodes.extend(ast.log(expr=ast.variable(v), coefficient=p) for v,p in evaluated.vars.items())
+        nodes.append(evaluated.operands[0]) if evaluated.operation == ast.OpKind.exp else ...
+        nodes.extend(ast.log(expr=n) for n in evaluated.operands) if evaluated.operation == ast.OpKind.mul else ...
+        nodes.append(ast.neg(ast.log(evaluated.operands[0]))) if evaluated.operation == ast.OpKind.inv else ...
+
+        return ast.add(
+            variables=expr.vars,
+            operands=nodes,
+            coefficient=expr.coefficient
+        )
+
+    return ast.new(
+        operation=expr.operation,
+        variables=expr.vars,
+        operands=[evaluated],
+        coefficient=expr.coefficient
+    )
 
 
 @simplify.register

@@ -31,7 +31,7 @@ def _mul_solve(expr: ast.Mul, var: str) -> (ast.Node, ast.Node):
         return None
 
     for n in expr.operands:
-        if var in ast.all_vars(vars):
+        if var in ast.all_vars(n):
             return None
 
     return ast.number(0), ast.variable(var)
