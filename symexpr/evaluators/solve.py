@@ -3,10 +3,6 @@ import symexpr.ast as ast
 from symexpr.evaluators.expand import expand
 
 
-"""
-A set of tools that allow to manipulate with AST
-"""
-
 @functools.singledispatch
 def solve(expr, var):
     """
@@ -117,10 +113,10 @@ def _add_solve(expr, var):
             )
         )
 
-    term1 = expand(ast.negative(ast.addition(non_var_terms)))
-    term2 = ast.inverse(ast.addition(reduced_var_terms))
+    term1 = expand(ast.neg(ast.add(non_var_terms)))
+    term2 = ast.inv(ast.add(reduced_var_terms))
 
     return (
-        ast.multiplication([term1, term2]),
+        ast.mul([term1, term2]),
         ast.term(coefficient=1, variables={var: power})
     )

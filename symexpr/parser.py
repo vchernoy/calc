@@ -60,7 +60,7 @@ def parse(reader, errors):
             tree2 = parse_expr(reader, errors)
             find_expected(reader, [tokenizer.Type.eol], errors)
 
-            tree = ast.addition([tree, ast.negative(tree2)])
+            tree = ast.add([tree, ast.neg(tree2)])
 
     return tree
 
@@ -95,7 +95,7 @@ def parse_sum(reader, errors):
 
     tree = parse_product(reader, errors)
     if neg:
-        tree = ast.negative(tree)
+        tree = ast.neg(tree)
 
     operands = [tree]
 
@@ -105,11 +105,11 @@ def parse_sum(reader, errors):
             reader.move_next()
             tree = parse_product(reader, errors)
             if neg:
-                tree = ast.negative(tree)
+                tree = ast.neg(tree)
 
             operands.append(tree)
 
-    return ast.addition(operands)
+    return ast.add(operands)
 
 
 def parse_product(reader, errors):
@@ -134,9 +134,9 @@ def parse_product(reader, errors):
         if prev_tok.typ == tokenizer.Type.id:
             name = reader.move_next().name
             if name == 'log':
-                tree = ast.logarithm(parse_short_product(reader, errors))
+                tree = ast.log(parse_short_product(reader, errors))
             elif name == 'exp':
-                tree = ast.exponent(parse_short_product(reader, errors))
+                tree = ast.exp(parse_short_product(reader, errors))
             else:
                 tree = ast.variable(name)
 
@@ -151,7 +151,7 @@ def parse_product(reader, errors):
         if operation == ast.OpKind.mul:
             operands.append(tree)
         elif operation == ast.OpKind.inv:
-            operands.append(ast.inverse(tree))
+            operands.append(ast.inv(tree))
         else:
             operands.append(tree)
 
@@ -179,7 +179,7 @@ def parse_product(reader, errors):
         else:
             break
 
-    return ast.multiplication(operands)
+    return ast.mul(operands)
 
 
 def parse_short_product(reader, errors):
@@ -211,13 +211,13 @@ def parse_short_product(reader, errors):
     if reader.look_next().typ == tokenizer.Type.id:
         name = reader.move_next().name
         if name == 'log':
-            operands.append(ast.logarithm(parse_short_product(reader, errors)))
+            operands.append(ast.log(parse_short_product(reader, errors)))
         elif name == 'exp':
-            operands.append(ast.exponent(parse_short_product(reader, errors)))
+            operands.append(ast.exp(parse_short_product(reader, errors)))
         else:
             operands.append(ast.variable(name))
 
-    return ast.multiplication(operands)
+    return ast.mul(operands)
 
 
 def parse_expr_in_parenthesis(reader, errors):

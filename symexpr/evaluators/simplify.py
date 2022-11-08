@@ -2,11 +2,6 @@ import functools
 import symexpr.ast as ast
 
 
-"""
-A set of tools that allow to manipulate with AST
-"""
-
-
 @functools.singledispatch
 def simplify(expr):
     """
@@ -61,7 +56,7 @@ def _add_simplify(expr):
     for d, l in sorted(pos_degree.items()):
         terms += l
 
-    return ast.addition(terms + neg_degree, coefficient=expr.coefficient, variables=expr.vars)
+    return ast.add(terms + neg_degree, coefficient=expr.coefficient, variables=expr.vars)
 
 
 @simplify.register(ast.Mul)
@@ -103,7 +98,7 @@ def _mul_simplify(expr):
             ast.incby(res_vars, {v: -p for v, p in t.vars.items()})
             inv_coefficient *= t.coefficient
             if t.operation != ast.OpKind.one:
-                evaluated3.append(ast.inverse(ast.new(operation=t.operation, operands=t.operands)))
+                evaluated3.append(ast.inv(ast.new(operation=t.operation, operands=t.operands)))
 
     evaluated = []
     for n in evaluated3:
@@ -116,12 +111,12 @@ def _mul_simplify(expr):
     pos_vars = {v: p for v, p in res_vars.items() if p > 0}
     inv_vars = {v: -p for v, p in res_vars.items() if p < 0}
 
-    n = ast.inverse(node=ast.term(inv_coefficient, inv_vars), variables=pos_vars, coefficient=res_coefficient)
+    n = ast.inv(expr=ast.term(inv_coefficient, inv_vars), variables=pos_vars, coefficient=res_coefficient)
     if n.operation == ast.OpKind.one:
-        return ast.multiplication(evaluated, coefficient=n.coefficient, variables=n.vars)
+        return ast.mul(evaluated, coefficient=n.coefficient, variables=n.vars)
 
     evaluated += [n]
-    return ast.multiplication(evaluated)
+    return ast.mul(evaluated)
 
 
 @simplify.register(ast.Inv)
@@ -136,7 +131,7 @@ def _inv_simplify(expr):
     inv_vars = {v: -p for v, p in res_vars.items() if p < 0}
 
     if evaluated.operation == ast.OpKind.one:
-        return ast.inverse(
+        return ast.inv(
             ast.term(evaluated.coefficient, inv_vars),
             coefficient=expr.coefficient,
             variables=pos_vars
@@ -144,9 +139,9 @@ def _inv_simplify(expr):
 
     if evaluated.operation == ast.OpKind.inv:
         return simplify(
-            ast.multiplication(
-                nodes=[
-                    ast.inverse(
+            ast.mul(
+                operands=[
+                    ast.inv(
                         ast.term(evaluated.coefficient, inv_vars),
                         coefficient=expr.coefficient,
                         variables=pos_vars
@@ -157,13 +152,13 @@ def _inv_simplify(expr):
         )
 
     if evaluated.operation == ast.OpKind.mul:
-        inversed_terms = [ast.inverse(t) for t in evaluated.operands if t.operation == ast.OpKind.inv]
+        inversed_terms = [ast.inv(t) for t in evaluated.operands if t.operation == ast.OpKind.inv]
         other_terms = [t for t in evaluated.operands if t.operation != ast.OpKind.inv]
         return simplify(
-            ast.multiplication(
-                nodes=[
-                          ast.inverse(
-                              ast.multiplication(other_terms, coefficient=evaluated.coefficient, variables=inv_vars),
+            ast.mul(
+                operands=[
+                          ast.inv(
+                              ast.mul(other_terms, coefficient=evaluated.coefficient, variables=inv_vars),
                               coefficient=expr.coefficient,
                               variables=pos_vars
                           )
@@ -171,7 +166,7 @@ def _inv_simplify(expr):
             )
         )
 
-    return ast.inverse(
+    return ast.inv(
         simplify(
             ast.new(
                 operation=evaluated.operation,

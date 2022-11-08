@@ -84,7 +84,7 @@ class Add(Node):
     For examples:
       2x*x*y*(expr1 + expr2 + expr3 + ... + exprn) could be represented by one Add-node
     """
-    def __init__(self, coefficient: Num = 1, variables: VarTerm = None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None):
         super().__init__(OpKind.add, coefficient, variables, operands)
         assert len(self.operands) >= 2
 
@@ -124,7 +124,7 @@ class Mul(Node):
     For examples:
       2x*x*y * expr1 * expr2 * expr3 * ... * exprn could be represented by one Mul-node
     """
-    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None):
         super().__init__(OpKind.mul, coefficient, variables, operands)
         assert len(self.operands) >= 2
 
@@ -160,7 +160,7 @@ class Inv(Node):
     For examples:
       2x*x*y / expr could be represented by one Inv-node
     """
-    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None):
         super().__init__(OpKind.inv, coefficient, variables, operands)
         assert len(self.operands) == 1
 
@@ -193,7 +193,7 @@ class One(Node):
     For examples:
       2x*x*y could be represented by one One-node
     """
-    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables: VarTerm = None):
         super().__init__(OpKind.one, coefficient, variables)
 
     def degree(self, var:str = None) -> int:
@@ -223,7 +223,7 @@ class Log(Node):
     For examples:
       2x*x*y * log expr could be represented by one Log-node
     """
-    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None):
         super().__init__(OpKind.log, coefficient, variables, operands)
         assert len(self.operands) == 1
 
@@ -257,7 +257,7 @@ class Exp(Node):
     For examples:
       2x*x*y * exp expr could be represented by one Exp-node
     """
-    def __init__(self, coefficient: Num = 1, variables=None, operands=None):
+    def __init__(self, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None):
         super().__init__(OpKind.exp, coefficient, variables, operands)
         assert len(self.operands) == 1
 
@@ -285,7 +285,7 @@ class Exp(Node):
         return f'({res})' if in_parenthesis else res
 
 
-def new(operation, coefficient: Num = 1, variables: dict = None, operands: list = None):
+def new(operation, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None):
     """
     Factory methods to create nodes of different types.
     """
@@ -294,31 +294,28 @@ def new(operation, coefficient: Num = 1, variables: dict = None, operands: list 
         return term(coefficient, variables)
 
     if operation == OpKind.add:
-        return addition(operands, variables, coefficient)
+        return add(operands, variables, coefficient)
 
     if operation == OpKind.mul:
-        return multiplication(operands, variables, coefficient)
+        return mul(operands, variables, coefficient)
 
     if operation == OpKind.inv:
-        return inverse(operands[0], variables, coefficient)
+        return inv(operands[0], variables, coefficient)
 
     if operation == OpKind.log:
-        return logarithm(operands[0], variables, coefficient)
+        return log(operands[0], variables, coefficient)
 
     if operation == OpKind.exp:
-        return exponent(operands[0], variables, coefficient)
+        return exp(operands[0], variables, coefficient)
 
     assert False
 
 
-def term(coefficient: Num, variables: dict = None):
+def term(coefficient: Num, variables: VarTerm = None):
     if coefficient == 0:
         return number(0)
 
-    if not variables:
-        return number(coefficient)
-
-    return One(coefficient=coefficient, variables=variables)
+    return One(coefficient=coefficient, variables=variables) if variables else number(coefficient)
 
 
 def number(value: Num):
@@ -329,63 +326,61 @@ def variable(name: str):
     return One(variables={name: 1})
 
 
-def addition(nodes, variables: dict = None, coefficient: Num = 1):
+def add(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1):
     if coefficient == 0:
         return number(0)
 
-    nodes = [n for n in nodes if n]
-    if not nodes:
+    operands = [n for n in operands if n]
+    if not operands:
         return number(0)
 
     res_vars = {}
     incby(res_vars, variables)
 
-    if len(nodes) == 1:
-        n = nodes[0]
-        incby(res_vars, n.vars)
-        return new(operation=n.operation, coefficient=coefficient * n.coefficient, variables=res_vars,
-                   operands=n.operands)
+    if len(operands) == 1:
+        expr = operands[0]
+        incby(res_vars, expr.vars)
+        return new(operation=expr.operation, coefficient=coefficient * expr.coefficient, variables=res_vars, operands=expr.operands)
 
-    return Add(operands=nodes, variables=variables, coefficient=coefficient)
+    return Add(operands=operands, variables=variables, coefficient=coefficient)
 
 
-def multiplication(nodes, variables: dict = None, coefficient: Num = 1):
+def mul(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1):
     if coefficient == 0:
         return number(0)
 
-    nodes = [n for n in nodes if n]
-    if not nodes:
+    operands = [n for n in operands if n]
+    if not operands:
         return term(coefficient=coefficient, variables=variables)
 
     res_vars = {}
     incby(res_vars, variables)
 
-    if len(nodes) == 1:
-        n = nodes[0]
-        incby(res_vars, n.vars)
-        return new(operation=n.operation, coefficient=coefficient * n.coefficient, variables=res_vars,
-                   operands=n.operands)
+    if len(operands) == 1:
+        expr = operands[0]
+        incby(res_vars, expr.vars)
+        return new(operation=expr.operation, coefficient=coefficient * expr.coefficient, variables=res_vars, operands=expr.operands)
 
-    return Mul(operands=nodes, variables=variables, coefficient=coefficient)
-
-
-def negative(node):
-    return new(operation=node.operation, coefficient=-node.coefficient, operands=node.operands,
-               variables=node.vars) if node else None
+    return Mul(operands=operands, variables=variables, coefficient=coefficient)
 
 
-def inverse(node, variables: dict = None, coefficient: Num = 1):
+def neg(expr: Node):
+    return new(operation=expr.operation, coefficient=-expr.coefficient, operands=expr.operands, variables=expr.vars) if expr \
+        else None
+
+
+def inv(expr: Node, variables: VarTerm = None, coefficient: Num = 1):
     if coefficient == 0:
         return number(0)
 
-    if not node:
+    if not expr:
         return term(coefficient=coefficient, variables=variables)
 
-    if (node.coefficient != 0) and (not node.vars) and (node.operation == OpKind.one):
-        if (type(coefficient) == int) and (type(node.coefficient) == int):
-            gcd_val = math.gcd(coefficient, node.coefficient)
+    if (expr.coefficient != 0) and (not expr.vars) and (expr.operation == OpKind.one):
+        if (type(coefficient) == int) and (type(expr.coefficient) == int):
+            gcd_val = math.gcd(coefficient, expr.coefficient)
             res_coefficient = coefficient // gcd_val
-            inv_coefficient = node.coefficient // gcd_val
+            inv_coefficient = expr.coefficient // gcd_val
             if inv_coefficient < 0:
                 res_coefficient = -res_coefficient
                 inv_coefficient = -inv_coefficient
@@ -395,30 +390,27 @@ def inverse(node, variables: dict = None, coefficient: Num = 1):
 
             return Inv(operands=[number(inv_coefficient)], variables=variables, coefficient=res_coefficient)
 
-        return term(variables=variables, coefficient=coefficient / node.coefficient)
+        return term(variables=variables, coefficient=coefficient / expr.coefficient)
 
-    return Inv(operands=[node], variables=variables, coefficient=coefficient)
-
-
-def logarithm(node, variables: dict = None, coefficient: Num = 1):
-    if not node:
-        return term(coefficient=coefficient, variables=variables)
-
-    return Log(operands=[node], variables=variables, coefficient=coefficient)
+    return Inv(operands=[expr], variables=variables, coefficient=coefficient)
 
 
-def exponent(node, variables: dict = None, coefficient: Num = 1):
-    if not node:
-        return term(coefficient=coefficient, variables=variables)
-
-    return Exp(operands=[node], variables=variables, coefficient=coefficient)
-
-def _vars_to_str(node) -> str:
-    return '*'.join(itertools.chain.from_iterable([v] * d for v,d in sorted(node.vars.items())))
+def log(expr: Node, variables: VarTerm = None, coefficient: Num = 1):
+    return Log(operands=[expr], variables=variables, coefficient=coefficient) if expr \
+        else term(coefficient=coefficient, variables=variables)
 
 
-def _degree(node, var: str = None) -> int:
-    return node.vars.get(var, 0) if var else sum(node.vars.values())
+def exp(expr: Node, variables: VarTerm = None, coefficient: Num = 1):
+    return Exp(operands=[expr], variables=variables, coefficient=coefficient) if expr \
+        else term(coefficient=coefficient, variables=variables)
+
+
+def _vars_to_str(expr: Node) -> str:
+    return '*'.join(itertools.chain.from_iterable([v] * d for v,d in sorted(expr.vars.items())))
+
+
+def _degree(expr: Node, var: str = None) -> int:
+    return expr.vars.get(var, 0) if var else sum(expr.vars.values())
 
 
 def incby(acc_vars: VarTerm, added_vars: VarTerm):
