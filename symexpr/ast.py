@@ -27,6 +27,7 @@ VarTerm: typing.TypeAlias = dict[str, int]
 Vars: typing.TypeAlias = set[str]
 Nodes: typing.TypeAlias = list['Node']
 
+
 class Node:
     def __init__(
             self,
@@ -57,7 +58,7 @@ class Node:
 
         return res
 
-    def is_number(self) -> bool:
+    def numeric(self) -> bool:
         raise NotImplemented()
 
     def is_term(self) -> bool:
@@ -90,7 +91,7 @@ class Add(Node):
     def degree(self, var: str = None) -> int:
         return _degree(self, var) + max(n.degree(var) for n in self.operands)
 
-    def is_number(self) -> bool:
+    def numeric(self) -> bool:
         return False
 
     def is_term(self) -> bool:
@@ -130,7 +131,7 @@ class Mul(Node):
     def degree(self, var: str = None) -> int:
         return _degree(self, var) + sum(n.degree(var) for n in self.operands)
 
-    def is_number(self) -> bool:
+    def numeric(self) -> bool:
         return False
 
     def is_term(self) -> bool:
@@ -166,11 +167,11 @@ class Inv(Node):
     def degree(self, var: str = None) -> int:
         return _degree(self, var) - self.operands[0].degree(var)
 
-    def is_number(self) -> bool:
+    def numeric(self) -> bool:
         return False
 
     def is_term(self) -> bool:
-        return self.operands[0].is_number()
+        return self.operands[0].numeric()
 
     def __str__(self, in_parenthesis: bool = False) -> str:
         if (self.coefficient == -1) and self.vars:
@@ -198,7 +199,7 @@ class One(Node):
     def degree(self, var:str = None) -> int:
         return _degree(self, var)
 
-    def is_number(self) -> bool:
+    def numeric(self) -> bool:
         return not self.vars
 
     def is_term(self) -> bool:
@@ -229,11 +230,11 @@ class Log(Node):
     def degree(self, var: str = None) -> int:
         return _degree(self, var)
 
-    def is_number(self) -> bool:
+    def numeric(self) -> bool:
         return False
 
     def is_term(self) -> bool:
-        return self.operands[0].is_number()
+        return self.operands[0].numeric()
 
     def __str__(self, in_parenthesis: bool = False) -> str:
         res = ''
@@ -249,6 +250,7 @@ class Log(Node):
 
         return f'({res})' if in_parenthesis else res
 
+
 class Exp(Node):
     """
     Represents coefficient * {x^k for (x,k) in vars} * exp operands[0].
@@ -262,11 +264,11 @@ class Exp(Node):
     def degree(self, var: str = None) -> int:
         return _degree(self, var)
 
-    def is_number(self) -> bool:
+    def numeric(self) -> bool:
         return False
 
     def is_term(self) -> bool:
-        return self.operands[0].is_number()
+        return self.operands[0].numeric()
 
     def __str__(self, in_parenthesis: bool = False) -> str:
         res = ''

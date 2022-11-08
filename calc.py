@@ -74,7 +74,7 @@ def main():
                     sol = sols[0]
                     print(f'solution: {root_expr} = {sol}')
 
-                    if not sol.is_number():
+                    if not sol.numeric():
                         evaluated_sol = evaluators.evalf(sol)
                         if str(evaluated_sol) != str(sol):
                             print(f'approximate solution: root_expr = {evaluators.evalf(sol)}')
@@ -87,9 +87,9 @@ def main():
                         subs_attempts.sort(key=lambda n: len(str(n)))
                         simplified_subs = subs_attempts[0]
                         print(f'substitutes the solution to the original expression: {simplified_subs}')
-                        if simplified_subs.is_number() and (simplified_subs.coefficient == 0):
+                        if simplified_subs.numeric() and (simplified_subs.coefficient == 0):
                             print('correct, 0 is expected')
-                        elif simplified_subs.is_number() and (abs(simplified_subs.coefficient) < 1e-10):
+                        elif simplified_subs.numeric() and (abs(simplified_subs.coefficient) < 1e-10):
                             print('correct, close to 0 is expected')
                         elif simplified_subs.variables():
                             free_vars = simplified_subs.variables()
@@ -102,9 +102,9 @@ def main():
                             final_attempts.sort(key=lambda n: len(str(n)))
                             final_subs = final_attempts[0]
                             print(f'random assignment gives {final_subs}')
-                            if final_subs.is_number() and (final_subs.coefficient == 0):
+                            if final_subs.numeric() and (final_subs.coefficient == 0):
                                 print('correct, 0 is expected')
-                            elif final_subs.is_number() and (abs(final_subs.coefficient) < 1e-10):
+                            elif final_subs.numeric() and (abs(final_subs.coefficient) < 1e-10):
                                 print('correct, close to 0 is expected')
                             else:
                                 print('ups... something wrong happened, test it more!')
@@ -115,7 +115,7 @@ def main():
                 else:
                     print(f'cannot solve the equation over {var}')
 
-            elif not simplified.is_number():
+            elif not simplified.numeric():
                 evaluated = evaluators.evalf(simplified)
                 if str(evaluated) != str(simplified):
                     print(f'approximate evaluation: {evaluators.evalf(simplified)}')

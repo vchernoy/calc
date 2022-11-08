@@ -8,26 +8,26 @@ A set of tools that allow to manipulate with AST
 
 
 @functools.singledispatch
-def simplify(self):
+def simplify(expr):
     """
     simplifies the given AST, performs basic transformation, does not open parentheses in a(b+c),
     but can evaluators a + b + c or a * b * c
-    :param self: AST
+    :param expr: AST
     :return: AST
     """
-    raise TypeError("cannot evaluators", self)
+    raise TypeError("cannot evaluators", expr)
 
 
 @simplify.register(ast.One)
 @simplify.register(ast.Log)
 @simplify.register(ast.Exp)
-def _simplify(self):
-    return self
+def _simplify(expr):
+    return expr
 
 
 @simplify.register(ast.Add)
-def _add_simplify(self):
-    evaluated0 = [simplify(n) for n in self.operands]
+def _add_simplify(expr):
+    evaluated0 = [simplify(n) for n in expr.operands]
     evaluated = []
     for n in evaluated0:
         if (n.operation == ast.OpKind.add) and (n.coefficient == 1) and not n.vars:
@@ -61,17 +61,17 @@ def _add_simplify(self):
     for d, l in sorted(pos_degree.items()):
         terms += l
 
-    return ast.addition(terms + neg_degree, coefficient=self.coefficient, variables=self.vars)
+    return ast.addition(terms + neg_degree, coefficient=expr.coefficient, variables=expr.vars)
 
 
 @simplify.register(ast.Mul)
-def _mul_simplify(self):
-    evaluated0 = [simplify(n) for n in self.operands]
+def _mul_simplify(expr):
+    evaluated0 = [simplify(n) for n in expr.operands]
     evaluated1 = []
 
-    res_coefficient = self.coefficient
+    res_coefficient = expr.coefficient
     res_vars = {}
-    ast.incby(res_vars, self.vars)
+    ast.incby(res_vars, expr.vars)
 
     for n in evaluated0:
         if n.operation == ast.OpKind.mul:
@@ -125,11 +125,11 @@ def _mul_simplify(self):
 
 
 @simplify.register(ast.Inv)
-def _inv_simplify(self):
-    evaluated = simplify(self.operands[0])
+def _inv_simplify(expr):
+    evaluated = simplify(expr.operands[0])
 
     res_vars = {}
-    ast.incby(res_vars, self.vars)
+    ast.incby(res_vars, expr.vars)
     ast.incby(res_vars, {v: -p for v, p in evaluated.vars.items()})
 
     pos_vars = {v: p for v, p in res_vars.items() if p > 0}
@@ -138,7 +138,7 @@ def _inv_simplify(self):
     if evaluated.operation == ast.OpKind.one:
         return ast.inverse(
             ast.term(evaluated.coefficient, inv_vars),
-            coefficient=self.coefficient,
+            coefficient=expr.coefficient,
             variables=pos_vars
         )
 
@@ -148,7 +148,7 @@ def _inv_simplify(self):
                 nodes=[
                     ast.inverse(
                         ast.term(evaluated.coefficient, inv_vars),
-                        coefficient=self.coefficient,
+                        coefficient=expr.coefficient,
                         variables=pos_vars
                     ),
                     evaluated.operands[0]
@@ -164,7 +164,7 @@ def _inv_simplify(self):
                 nodes=[
                           ast.inverse(
                               ast.multiplication(other_terms, coefficient=evaluated.coefficient, variables=inv_vars),
-                              coefficient=self.coefficient,
+                              coefficient=expr.coefficient,
                               variables=pos_vars
                           )
                       ] + inversed_terms
@@ -180,6 +180,6 @@ def _inv_simplify(self):
                 coefficient=evaluated.coefficient
             )
         ),
-        coefficient=self.coefficient,
+        coefficient=expr.coefficient,
         variables=pos_vars
     )

@@ -9,27 +9,27 @@ A set of tools that allow to manipulate with AST
 
 
 @functools.singledispatch
-def expand(self):
+def expand(expr):
     """
     Opens parentheses if meets a(b + x)
-    :param self: AST
+    :param expr: AST
     :return: AST
     """
-    raise TypeError("cannot expand", self)
+    raise TypeError("cannot expand", expr)
 
 
 @expand.register(ast.Inv)
 @expand.register(ast.Log)
 @expand.register(ast.Exp)
 @expand.register(ast.One)
-def _expand(self):
-    return self
+def _expand(expr):
+    return expr
 
 
 @expand.register(ast.Add)
-def _add_expand(self):
-    term = ast.term(coefficient=self.coefficient, variables=self.vars)
-    expanded = [expand(n) for n in self.operands]
+def _add_expand(expr):
+    term = ast.term(coefficient=expr.coefficient, variables=expr.vars)
+    expanded = [expand(n) for n in expr.operands]
 
     node = simplify(ast.addition(nodes=expanded))
     if node.operation != ast.OpKind.add:
@@ -42,9 +42,9 @@ def _add_expand(self):
 
 
 @expand.register(ast.Mul)
-def _mul_expand(self):
-    term = ast.term(coefficient=self.coefficient, variables=self.vars)
-    expanded = [term] + [expand(n) for n in self.operands]
+def _mul_expand(expr):
+    term = ast.term(coefficient=expr.coefficient, variables=expr.vars)
+    expanded = [term] + [expand(n) for n in expr.operands]
 
     res = [ast.number(1)]
     for term in expanded:

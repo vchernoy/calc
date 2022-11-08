@@ -8,33 +8,33 @@ A set of tools that allow to manipulate with AST
 """
 
 @functools.singledispatch
-def solve(self, var):
+def solve(expr, var):
     """
     Tries to solve the equation given in the form of AST.
     solve('2x-10') => ('5', 'x') meaning that x=5 is the root of 2x-10=0
     solve('2x*x-y-10') => ('(10+y)/2', 'x*x') meaning that x*x=(10+y)/2 is the root of 2x*x-y-10=0
     solve('x*x+x') => None -- failed to solve
-    :param self: AST
+    :param expr: AST
     :param var: to find root for this variable
     :return: a pair (solution as AST, variable as AST) or None if failed to solve
     """
-    raise TypeError("cannot solve", self)
+    raise TypeError('cannot solve {expr} over {var}')
 
 
 @solve.register(ast.One)
-def _one_solve(self, var):
-    if var not in self.variables():
+def _one_solve(expr, var):
+    if var not in expr.variables():
         return None
 
     return ast.number(0), ast.variable(var)
 
 
 @solve.register(ast.Mul)
-def _mul_solve(self, var):
-    if var not in self.variables():
+def _mul_solve(expr, var):
+    if var not in expr.variables():
         return None
 
-    for n in self.operands:
+    for n in expr.operands:
         if var in n.variables():
             return None
 
@@ -42,21 +42,21 @@ def _mul_solve(self, var):
 
 
 @solve.register(ast.Log)
-def _log_solve(self, var):
-    if var not in self.variables():
+def _log_solve(expr, var):
+    if var not in expr.variables():
         return None
 
-    if var in self.operands[0].variables():
+    if var in expr.operands[0].variables():
         return None
 
     return ast.number(0), ast.variable(var)
 
 @solve.register(ast.Exp)
-def _exp_solve(self, var):
-    if var not in self.variables():
+def _exp_solve(expr, var):
+    if var not in expr.variables():
         return None
 
-    if var in self.operands[0].variables():
+    if var in expr.operands[0].variables():
         return None
 
     return ast.number(0), ast.variable(var)
@@ -74,17 +74,17 @@ def _inv_solve(self, var):
 
 
 @solve.register(ast.Add)
-def _add_solve(self, var):
-    if var not in self.variables():
+def _add_solve(expr, var):
+    if var not in expr.variables():
         return None
 
-    var_terms = [t for t in self.operands if var in t.variables()]
-    non_var_terms = [t for t in self.operands if var not in t.variables()]
+    var_terms = [t for t in expr.operands if var in t.variables()]
+    non_var_terms = [t for t in expr.operands if var not in t.variables()]
 
-    if self.vars.get(var, 0) < 0:
+    if expr.vars.get(var, 0) < 0:
         return None
 
-    if (self.vars.get(var, 0) > 0) and var_terms:
+    if (expr.vars.get(var, 0) > 0) and var_terms:
         return None
 
     if not var_terms:
