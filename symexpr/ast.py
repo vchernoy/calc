@@ -51,12 +51,12 @@ class Node:
     def degree(self, var: str = None) -> int:
         raise NotImplemented()
 
-    def variables(self) -> Vars:
-        res = set(self.vars.keys())
-        for n in self.operands:
-            res.update(n.variables())
-
-        return res
+    # def vars(self) -> Vars:
+    #     res = set(self.vars.keys())
+    #     for n in self.operands:
+    #         res.update(n.vars())
+    #
+    #     return res
 
     def numeric(self) -> bool:
         raise NotImplemented()
@@ -196,7 +196,7 @@ class One(Node):
     def __init__(self, coefficient: Num = 1, variables: VarTerm = None):
         super().__init__(OpKind.one, coefficient, variables)
 
-    def degree(self, var:str = None) -> int:
+    def degree(self, var: str = None) -> int:
         return _degree(self, var)
 
     def numeric(self) -> bool:
@@ -376,8 +376,8 @@ def inv(expr: Node, variables: VarTerm = None, coefficient: Num = 1):
     if not expr:
         return term(coefficient=coefficient, variables=variables)
 
-    if (expr.coefficient != 0) and (not expr.vars) and (expr.operation == OpKind.one):
-        if (type(coefficient) == int) and (type(expr.coefficient) == int):
+    if expr.coefficient != 0 and not expr.vars and expr.operation == OpKind.one:
+        if type(coefficient) == type(expr.coefficient) == int:
             gcd_val = math.gcd(coefficient, expr.coefficient)
             res_coefficient = coefficient // gcd_val
             inv_coefficient = expr.coefficient // gcd_val
@@ -421,3 +421,12 @@ def incby(acc_vars: VarTerm, added_vars: VarTerm):
         acc_vars[v] = acc_vars.setdefault(v, 0) + p
         if acc_vars[v] == 0:
             del acc_vars[v]
+
+
+def all_vars(expr) -> Vars:
+    res = set(expr.vars.keys())
+    for n in expr.operands:
+        res.update(all_vars(n))
+
+    return res
+

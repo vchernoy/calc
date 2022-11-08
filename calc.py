@@ -1,4 +1,5 @@
 import random
+import symexpr.ast as ast
 import symexpr.tokenizer as tokenizer
 import symexpr.parser as parser
 import symexpr.evaluators as evaluators
@@ -54,7 +55,7 @@ def main():
             simplified = attempts[0]
             print(f'simplified expression: {simplified}')
 
-            variables = simplified.variables()
+            variables = ast.all_vars(simplified)
 
             if variables:
                 print("equation on '" + "', '".join(variables) + "' is detected")
@@ -90,8 +91,8 @@ def main():
                             print('correct, 0 is expected')
                         elif simplified_subs.numeric() and (abs(simplified_subs.coefficient) < 1e-10):
                             print('correct, close to 0 is expected')
-                        elif simplified_subs.variables():
-                            free_vars = simplified_subs.variables()
+                        elif ast.all_vars(simplified_subs):
+                            free_vars = ast.all_vars(simplified_subs)
                             print(f'there are still free variables {free_vars}')
                             print("let's generate random assignments for them...")
                             assignment = {v: random.uniform(-1000, 1000) for v in free_vars}

@@ -1,4 +1,6 @@
 import functools
+import itertools
+
 import symexpr.ast as ast
 
 
@@ -46,17 +48,17 @@ def _add_simplify(expr):
 
     evaluated = list(d.values()) + non_terms
 
-    neg_degree = [t for t in evaluated if t.degree() < 0]
     pos_degree = {}
     for t in evaluated:
         if t.degree() >= 0:
             pos_degree.setdefault(t.degree(), []).append(t)
 
-    terms = []
-    for d, l in sorted(pos_degree.items()):
-        terms += l
-
-    return ast.add(terms + neg_degree, coefficient=expr.coefficient, variables=expr.vars)
+    return ast.add(
+        operands=list(itertools.chain.from_iterable(l for _, l in sorted(pos_degree.items())))\
+                 + [t for t in evaluated if t.degree() < 0],
+        coefficient=expr.coefficient,
+        variables=expr.vars
+    )
 
 
 @simplify.register(ast.Mul)
@@ -112,11 +114,10 @@ def _mul_simplify(expr):
     inv_vars = {v: -p for v, p in res_vars.items() if p < 0}
 
     n = ast.inv(expr=ast.term(inv_coefficient, inv_vars), variables=pos_vars, coefficient=res_coefficient)
-    if n.operation == ast.OpKind.one:
-        return ast.mul(evaluated, coefficient=n.coefficient, variables=n.vars)
 
-    evaluated += [n]
-    return ast.mul(evaluated)
+    return ast.mul(evaluated, coefficient=n.coefficient, variables=n.vars) if n.operation == ast.OpKind.one \
+        else ast.mul(evaluated+[n])
+
 
 
 @simplify.register(ast.Inv)
@@ -157,12 +158,12 @@ def _inv_simplify(expr):
         return simplify(
             ast.mul(
                 operands=[
-                          ast.inv(
-                              ast.mul(other_terms, coefficient=evaluated.coefficient, variables=inv_vars),
-                              coefficient=expr.coefficient,
-                              variables=pos_vars
-                          )
-                      ] + inversed_terms
+                    ast.inv(
+                        ast.mul(other_terms, coefficient=evaluated.coefficient, variables=inv_vars),
+                        coefficient=expr.coefficient,
+                        variables=pos_vars
+                    )
+                ] + inversed_terms
             )
         )
 
