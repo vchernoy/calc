@@ -285,7 +285,7 @@ class Exp(Node):
         return f'({res})' if in_parenthesis else res
 
 
-def new(operation, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None):
+def new(operation: OpKind, coefficient: Num = 1, variables: VarTerm = None, operands: Nodes = None) -> Node:
     """
     Factory methods to create nodes of different types.
     """
@@ -311,22 +311,22 @@ def new(operation, coefficient: Num = 1, variables: VarTerm = None, operands: No
     assert False
 
 
-def term(coefficient: Num, variables: VarTerm = None):
+def term(coefficient: Num, variables: VarTerm = None) -> One:
     if coefficient == 0:
         return number(0)
 
     return One(coefficient=coefficient, variables=variables) if variables else number(coefficient)
 
 
-def number(value: Num):
+def number(value: Num) -> One:
     return One(coefficient=value)
 
 
-def variable(name: str):
+def variable(name: str) -> One:
     return One(variables={name: 1})
 
 
-def add(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1):
+def add(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1) -> Node:
     if coefficient == 0:
         return number(0)
 
@@ -345,7 +345,7 @@ def add(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1):
     return Add(operands=operands, variables=variables, coefficient=coefficient)
 
 
-def mul(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1):
+def mul(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1) -> Node:
     if coefficient == 0:
         return number(0)
 
@@ -364,12 +364,12 @@ def mul(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1):
     return Mul(operands=operands, variables=variables, coefficient=coefficient)
 
 
-def neg(expr: Node):
+def neg(expr: Node) -> Node | None:
     return new(operation=expr.operation, coefficient=-expr.coefficient, operands=expr.operands, variables=expr.vars) if expr \
         else None
 
 
-def inv(expr: Node, variables: VarTerm = None, coefficient: Num = 1):
+def inv(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> One | Inv:
     if coefficient == 0:
         return number(0)
 
@@ -395,12 +395,12 @@ def inv(expr: Node, variables: VarTerm = None, coefficient: Num = 1):
     return Inv(operands=[expr], variables=variables, coefficient=coefficient)
 
 
-def log(expr: Node, variables: VarTerm = None, coefficient: Num = 1):
+def log(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> One | Log:
     return Log(operands=[expr], variables=variables, coefficient=coefficient) if expr \
         else term(coefficient=coefficient, variables=variables)
 
 
-def exp(expr: Node, variables: VarTerm = None, coefficient: Num = 1):
+def exp(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> One | Exp:
     return Exp(operands=[expr], variables=variables, coefficient=coefficient) if expr \
         else term(coefficient=coefficient, variables=variables)
 
@@ -413,7 +413,7 @@ def _degree(expr: Node, var: str = None) -> int:
     return expr.vars.get(var, 0) if var else sum(expr.vars.values())
 
 
-def incby(acc_vars: VarTerm, added_vars: VarTerm):
+def incby(acc_vars: VarTerm, added_vars: VarTerm) -> None:
     if not added_vars:
         return
 
@@ -423,7 +423,7 @@ def incby(acc_vars: VarTerm, added_vars: VarTerm):
             del acc_vars[v]
 
 
-def all_vars(expr) -> Vars:
+def all_vars(expr: Node) -> Vars:
     res = set(expr.vars.keys())
     for n in expr.operands:
         res.update(all_vars(n))

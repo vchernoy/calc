@@ -11,7 +11,7 @@ def simplify(expr) -> ast.Node:
     :param expr: AST
     :return: AST
     """
-    raise TypeError("cannot evaluators", expr)
+    raise TypeError(f'cannot evaluators" {expr}')
 
 
 @simplify.register
@@ -53,7 +53,7 @@ def _log_simplify(expr: ast.Log) -> ast.Node:
     if evaluated.operation in (ast.OpKind.exp, ast.OpKind.mul, ast.OpKind.one, ast.OpKind.inv):
         nodes = []
         nodes.append(ast.log(ast.number(evaluated.coefficient))) if evaluated.coefficient != 1 else ...
-        nodes.extend(ast.log(expr=ast.variable(v), coefficient=p) for v,p in evaluated.vars.items())
+        nodes.extend(ast.log(expr=ast.variable(v), coefficient=p) for v, p in evaluated.vars.items())
         nodes.append(evaluated.operands[0]) if evaluated.operation == ast.OpKind.exp else ...
         nodes.extend(ast.log(expr=n) for n in evaluated.operands) if evaluated.operation == ast.OpKind.mul else ...
         nodes.append(ast.neg(ast.log(evaluated.operands[0]))) if evaluated.operation == ast.OpKind.inv else ...

@@ -11,17 +11,14 @@ def subs(expr: ast.Node, assignment: dict[str, ast.Num]) -> ast.Node:
     :param assignment: a mapping between free variables and their numerical values
     :return: AST
     """
-    evaluated = [subs(n, assignment) for n in expr.operands]
-    free_vars = {v: p for v, p in expr.vars.items() if v not in assignment}
-
     return ast.new(
         operation=expr.operation,
-        operands=evaluated,
+        operands=[subs(n, assignment) for n in expr.operands],
         coefficient=math.prod(
             (assignment[v] ** p for v, p in expr.vars.items() if v in assignment),
             start=expr.coefficient
         ),
-        variables=free_vars
+        variables={v: p for v, p in expr.vars.items() if v not in assignment}
     )
 
 
@@ -33,17 +30,14 @@ def subse(expr: ast.Node, assignment: dict[str, ast.Node]) -> ast.Node:
     :param assignment: a mapping between free variables and their AST values
     :return: AST
     """
-    evaluated = [subse(n, assignment) for n in expr.operands]
-    free_vars = {v: p for v, p in expr.vars.items() if v not in assignment}
-
     return ast.mul(
         list(itertools.chain.from_iterable([assignment[v]] * p for v, p in expr.vars.items() if v in assignment)) +
         [
             ast.new(
                 operation=expr.operation,
-                operands=evaluated,
+                operands=[subse(n, assignment) for n in expr.operands],
                 coefficient=expr.coefficient,
-                variables=free_vars
+                variables={v: p for v, p in expr.vars.items() if v not in assignment}
             )
         ]
     )

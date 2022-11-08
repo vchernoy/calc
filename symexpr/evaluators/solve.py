@@ -4,7 +4,7 @@ from symexpr.evaluators.expand import expand
 
 
 @functools.singledispatch
-def solve(expr, var: str) -> ast.Node:
+def solve(expr, var: str) -> tuple[ast.Node, ast.Node] | None:
     """
     Tries to solve the equation given in the form of AST.
     solve('2x-10') => ('5', 'x') meaning that x=5 is the root of 2x-10=0
@@ -18,15 +18,12 @@ def solve(expr, var: str) -> ast.Node:
 
 
 @solve.register
-def _one_solve(expr: ast.One, var: str) -> (ast.Node, ast.Node):
-    if var not in ast.all_vars(expr):
-        return None
-
-    return ast.number(0), ast.variable(var)
+def _one_solve(expr: ast.One, var: str) -> tuple[ast.Node, ast.Node] | None:
+    return (ast.number(0), ast.variable(var)) if var in ast.all_vars(expr) else None
 
 
 @solve.register
-def _mul_solve(expr: ast.Mul, var: str) -> (ast.Node, ast.Node):
+def _mul_solve(expr: ast.Mul, var: str) -> tuple[ast.Node, ast.Node] | None:
     if var not in ast.all_vars(expr):
         return None
 
@@ -38,17 +35,7 @@ def _mul_solve(expr: ast.Mul, var: str) -> (ast.Node, ast.Node):
 
 
 @solve.register
-def _log_solve(expr: ast.Log, var: str) -> (ast.Node, ast.Node):
-    if var not in ast.all_vars(expr):
-        return None
-
-    if var in ast.all_vars(expr.operands[0]):
-        return None
-
-    return ast.number(0), ast.variable(var)
-
-@solve.register
-def _exp_solve(expr: ast.Exp, var: str) -> (ast.Node, ast.Node):
+def _log_solve(expr: ast.Log, var: str) -> tuple[ast.Node, ast.Node] | None:
     if var not in ast.all_vars(expr):
         return None
 
@@ -59,7 +46,7 @@ def _exp_solve(expr: ast.Exp, var: str) -> (ast.Node, ast.Node):
 
 
 @solve.register
-def _inv_solve(expr: ast.Inv, var: str) -> (ast.Node, ast.Node):
+def _exp_solve(expr: ast.Exp, var: str) -> tuple[ast.Node, ast.Node] | None:
     if var not in ast.all_vars(expr):
         return None
 
@@ -70,7 +57,18 @@ def _inv_solve(expr: ast.Inv, var: str) -> (ast.Node, ast.Node):
 
 
 @solve.register
-def _add_solve(expr: ast.Add, var: str) -> (ast.Node, ast.Node):
+def _inv_solve(expr: ast.Inv, var: str) -> tuple[ast.Node, ast.Node] | None:
+    if var not in ast.all_vars(expr):
+        return None
+
+    if var in ast.all_vars(expr.operands[0]):
+        return None
+
+    return ast.number(0), ast.variable(var)
+
+
+@solve.register
+def _add_solve(expr: ast.Add, var: str) -> tuple[ast.Node, ast.Node] | None:
     if var not in ast.all_vars(expr):
         return None
 
