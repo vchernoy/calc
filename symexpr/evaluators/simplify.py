@@ -1,3 +1,4 @@
+import collections
 import functools
 import itertools
 import symexpr.ast as ast
@@ -25,25 +26,25 @@ def _exp_simplify(expr: ast.Exp) -> ast.Node:
 
     if evaluated.operation == ast.OpKind.add:
         return ast.mul(
+            coefficient=expr.coefficient,
+            variables=expr.vars,
             operands=[
                 ast.exp(ast.add([n], variables=evaluated.vars, coefficient=evaluated.coefficient)) for n in evaluated.operands
             ],
-            variables=expr.vars,
-            coefficient=expr.coefficient
         )
 
     if evaluated.operation == ast.OpKind.log and not evaluated.vars and evaluated.coefficient == 1:
         return ast.add(
+            coefficient=expr.coefficient,
             variables=expr.vars,
             operands=[evaluated.operands[0]],
-            coefficient=expr.coefficient
         )
 
     return ast.new(
         operation=expr.operation,
+        coefficient=expr.coefficient,
         variables=expr.vars,
         operands=[evaluated],
-        coefficient=expr.coefficient
     )
 
 
@@ -101,7 +102,7 @@ def _add_simplify(expr: ast.Add) -> ast.Node:
             pos_degree.setdefault(t.degree(), []).append(t)
 
     return ast.add(
-        operands=list(itertools.chain.from_iterable(l for _, l in sorted(pos_degree.items()))) \
+        operands=list(itertools.chain.from_iterable(l for _, l in sorted(pos_degree.items())))
                  + [t for t in evaluated if t.degree() < 0],
         coefficient=expr.coefficient,
         variables=expr.vars
@@ -114,12 +115,11 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
     evaluated1 = []
 
     res_coefficient = expr.coefficient
-    res_vars = {}
-    ast.incby(res_vars, expr.vars)
+    res_vars = collections.Counter(expr.vars)
 
     for n in evaluated0:
         if n.operation == ast.OpKind.mul:
-            ast.incby(res_vars, n.vars)
+            res_vars.update(n.vars)
             res_coefficient *= n.coefficient
             evaluated1 += n.operands
         else:
@@ -129,7 +129,7 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
     for n in evaluated1:
         assert n.operation != ast.OpKind.mul
 
-        ast.incby(res_vars, n.vars)
+        res_vars.update(n.vars)
         res_coefficient *= n.coefficient
 
         if n.operation != ast.OpKind.one:
@@ -144,7 +144,7 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
 
         if n.operation == ast.OpKind.inv:
             t = n.operands[0]
-            ast.incby(res_vars, {v: -p for v, p in t.vars.items()})
+            res_vars.update({v: -p for v, p in t.vars.items()})
             inv_coefficient *= t.coefficient
             if t.operation != ast.OpKind.one:
                 evaluated3.append(ast.inv(ast.new(operation=t.operation, operands=t.operands)))
@@ -169,10 +169,8 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
 @simplify.register
 def _inv_simplify(expr: ast.Inv) -> ast.Node:
     evaluated = simplify(expr.operands[0])
-
-    res_vars = {}
-    ast.incby(res_vars, expr.vars)
-    ast.incby(res_vars, {v: -p for v, p in evaluated.vars.items()})
+    res_vars = collections.Counter(expr.vars)
+    res_vars.update({v: -p for v, p in evaluated.vars.items()})
 
     pos_vars = {v: p for v, p in res_vars.items() if p > 0}
     inv_vars = {v: -p for v, p in res_vars.items() if p < 0}

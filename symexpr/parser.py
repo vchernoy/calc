@@ -1,5 +1,3 @@
-from collections.abc import Iterable
-
 import symexpr.tokenizer as tokenizer
 import symexpr.ast as ast
 import typing

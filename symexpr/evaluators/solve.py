@@ -1,3 +1,4 @@
+import collections
 import functools
 import symexpr.ast as ast
 from symexpr.evaluators.expand import expand
@@ -99,9 +100,8 @@ def _add_solve(expr: ast.Add, var: str) -> tuple[ast.Node, ast.Node] | None:
 
     reduced_var_terms = []
     for term in var_terms:
-        reduced_vars = {}
-        ast.incby(reduced_vars, term.vars)
-        ast.incby(reduced_vars, {var: -power})
+        reduced_vars = collections.Counter(term.vars)
+        reduced_vars.update({var: -power})
         reduced_var_terms.append(
             ast.new(
                 operation=term.operation,

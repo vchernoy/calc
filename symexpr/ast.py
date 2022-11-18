@@ -1,6 +1,6 @@
+import collections
 import math
 import enum
-import itertools
 import typing
 
 """
@@ -24,7 +24,7 @@ class OpKind(enum.Enum):
 
 Num: typing.TypeAlias = float
 VarTerm: typing.TypeAlias = dict[str, int]
-Vars: typing.TypeAlias = set[str]
+Vars: typing.TypeAlias = collections.Counter[str]
 Nodes: typing.TypeAlias = list['Node']
 
 
@@ -33,14 +33,14 @@ class Node:
             self,
             operation: OpKind,
             coefficient: Num = 1,
-            variables: VarTerm = None,
+            variables: Vars = None,
             operands: Nodes = None
     ):
         assert type(operation) == OpKind
         assert type(coefficient) in (float, int)
 
-        self.vars: VarTerm = {}
-        incby(self.vars, variables)
+        self.vars = collections.Counter({v: p for v, p in variables.items() if p != 0}) \
+            if variables else collections.Counter()
 
         self.operation: OpKind = operation
         self.coefficient: Num = coefficient
@@ -58,7 +58,7 @@ class Node:
         raise NotImplemented()
 
     def footprint(self) -> str:
-        return ','.join(f'{v}^{p}' for v,p in sorted(self.vars.items()))
+        return ','.join(f'{v}^{p}' for v, p in sorted(self.vars.items()))
 
     def __repr__(self) -> str:
         r = [f'{self.operation}', f'{self.coefficient}', f'{self.vars}']
@@ -241,9 +241,8 @@ def new_with(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> Nod
     if not variables:
         res_vars = expr.vars
     else:
-        res_vars = {}
-        incby(res_vars, variables)
-        incby(res_vars, expr.vars)
+        res_vars = collections.Counter(expr.vars)
+        res_vars.update(variables)
 
     return new(operation=expr.operation, coefficient=coefficient * expr.coefficient, variables=res_vars, operands=expr.operands)
 
@@ -314,16 +313,6 @@ def exp(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> One | Ex
 
 def _degree(expr: Node, var: str = None) -> int:
     return expr.vars.get(var, 0) if var else sum(expr.vars.values())
-
-
-def incby(acc_vars: VarTerm, added_vars: VarTerm) -> None:
-    if not added_vars:
-        return
-
-    for v, p in added_vars.items():
-        acc_vars[v] = acc_vars.get(v, 0) + p
-        if acc_vars[v] == 0:
-            del acc_vars[v]
 
 
 def all_vars(expr: Node) -> Vars:
