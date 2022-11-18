@@ -115,3 +115,19 @@ def _exp_stringify(self: ast.Exp, in_parenthesis: bool = False) -> str:
     res += 'exp ' + stringify(self.operands[0], True)
 
     return f'({res})' if in_parenthesis else res
+
+
+@stringify.register
+def _evalf_stringify(self: ast.Evalf, in_parenthesis: bool = False) -> str:
+    res = ''
+    if self.coeff == -1:
+        res = '-'
+    elif self.coeff != 1:
+        res = str(self.coeff)
+
+    if self.vars:
+        res += _vars_to_str(self) + '*'
+
+    res += 'evalf ' + stringify(self.operands[0], True)
+
+    return f'({res})' if in_parenthesis else res

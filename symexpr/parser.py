@@ -254,6 +254,8 @@ def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node|None:
         tree = ast.log(parse_short_product(reader, errors))
     elif name == 'exp':
         tree = ast.exp(parse_short_product(reader, errors))
+    elif name == 'evalf':
+        tree = ast.evalf(parse_short_product(reader, errors))
     else:
         tree = ast.variable(name)
 

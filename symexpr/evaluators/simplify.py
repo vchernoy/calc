@@ -2,6 +2,7 @@ import collections
 import functools
 import itertools
 import symexpr.ast as ast
+from symexpr import evaluators
 
 
 @functools.singledispatch
@@ -74,6 +75,11 @@ def _log_simplify(expr: ast.Log) -> ast.Node:
 
 
 @simplify.register
+def _evalf_simplify(expr: ast.Evalf) -> ast.Node:
+    return ast.new_with(expr=evaluators.evalf(expr.operands[0]), variables=expr.vars, coeff=expr.coeff)
+
+
+@simplify.register
 def _add_simplify(expr: ast.Add) -> ast.Node:
     evaluated0 = [simplify(n) for n in expr.operands]
     evaluated = []
@@ -139,7 +145,7 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
     evaluated3 = [n for n in evaluated2 if n.operation != ast.OpKind.inv]
     inv_coeff = 1
     for n in evaluated2:
-        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp]
+        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf], f'received: {n.operation}'
         assert n.coeff == 1
         assert not n.vars
 
@@ -152,7 +158,7 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
 
     evaluated = []
     for n in evaluated3:
-        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp]
+        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf]
         assert n.coeff == 1
         assert not n.vars
 

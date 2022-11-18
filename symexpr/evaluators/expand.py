@@ -1,6 +1,6 @@
 import functools
 import symexpr.ast as ast
-from symexpr.evaluators.simplify import simplify
+from symexpr import evaluators
 
 
 @functools.singledispatch
@@ -32,18 +32,23 @@ def _expand(expr) -> ast.Node:
 
 
 @expand.register
+def _evalf_expand(expr: ast.Evalf) -> ast.Node:
+    return ast.new_with(expr=evaluators.evalf(expr.operands[0]), variables=expr.vars, coeff=expr.coeff)
+
+
+@expand.register
 def _add_expand(expr: ast.Add) -> ast.Node:
     term = ast.term(coeff=expr.coeff, variables=expr.vars)
     expanded = [expand(n) for n in expr.operands]
 
-    node = simplify(ast.add(operands=expanded))
+    node = evaluators.simplify(ast.add(operands=expanded))
     if node.operation != ast.OpKind.add:
-        return simplify(ast.mul(operands=[term, node]))
+        return evaluators.simplify(ast.mul(operands=[term, node]))
 
     term1 = ast.term(coeff=node.coeff, variables=node.vars)
-    terms = [simplify(ast.mul(operands=[term, t, term1])) for t in node.operands]
+    terms = [evaluators.simplify(ast.mul(operands=[term, t, term1])) for t in node.operands]
 
-    return simplify(ast.add(terms))
+    return evaluators.simplify(ast.add(terms))
 
 
 @expand.register
@@ -54,13 +59,13 @@ def _mul_expand(expr: ast.Mul) -> ast.Node:
     res = [ast.number(1)]
     for term in expanded:
         if term.operation != ast.OpKind.add:
-            res = [simplify(ast.mul(operands=[term, t])) for t in res]
+            res = [evaluators.simplify(ast.mul(operands=[term, t])) for t in res]
         else:
             res2 = []
             for t1 in res:
                 for t2 in term.operands:
-                    res2.append(simplify(ast.mul(operands=[t1, t2])))
+                    res2.append(evaluators.simplify(ast.mul(operands=[t1, t2])))
 
-            res = simplify(ast.add(operands=res2)).operands
+            res = evaluators.simplify(ast.add(operands=res2)).operands
 
-    return simplify(ast.add(operands=res))
+    return evaluators.simplify(ast.add(operands=res))

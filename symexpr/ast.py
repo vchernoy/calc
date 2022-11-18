@@ -20,6 +20,7 @@ class OpKind(enum.Enum):
     inv = 4
     log = 5
     exp = 6
+    evalf = 7
 
 
 Num: typing.TypeAlias = float
@@ -193,6 +194,26 @@ class Exp(Node):
         return self.operands[0].numeric()
 
 
+class Evalf(Node):
+    """
+    Represents coeff * {x^k for x,k in vars} * exp operands[0].
+    For examples:
+      2x*x*y * exp expr could be represented by one Exp-node
+    """
+    def __init__(self, coeff: Num = 1, variables: VarTerm = None, operands: Nodes = None):
+        super().__init__(OpKind.evalf, coeff, variables, operands)
+        assert len(self.operands) == 1
+
+    def degree(self, var: str = None) -> int:
+        return _degree(self, var)
+
+    def numeric(self) -> bool:
+        return False
+
+    def is_term(self) -> bool:
+        return self.operands[0].numeric()
+
+
 def new(operation: OpKind, coeff: Num = 1, variables: VarTerm = None, operands: Nodes = None) -> Node:
     """
     Factory methods to create nodes of different types.
@@ -215,6 +236,9 @@ def new(operation: OpKind, coeff: Num = 1, variables: VarTerm = None, operands: 
 
     if operation == OpKind.exp:
         return exp(operands[0], variables, coeff)
+
+    if operation == OpKind.evalf:
+        return evalf(operands[0], variables, coeff)
 
     assert False
 
@@ -308,6 +332,11 @@ def log(expr: Node, variables: VarTerm = None, coeff: Num = 1) -> One | Log:
 
 def exp(expr: Node, variables: VarTerm = None, coeff: Num = 1) -> One | Exp:
     return Exp(operands=[expr], variables=variables, coeff=coeff) if expr \
+        else term(coeff=coeff, variables=variables)
+
+
+def evalf(expr: Node, variables: VarTerm = None, coeff: Num = 1) -> One | Exp:
+    return Evalf(operands=[expr], variables=variables, coeff=coeff) if expr \
         else term(coeff=coeff, variables=variables)
 
 

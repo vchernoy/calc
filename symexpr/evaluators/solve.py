@@ -114,4 +114,4 @@ def _add_solve(expr: ast.Add, var: str) -> tuple[ast.Node, ast.Node] | None:
     term1 = expand(ast.neg(ast.add(non_var_terms)))
     term2 = ast.inv(ast.add(reduced_var_terms))
 
-    return ast.mul([term1, term2]), ast.term(coeff=1, variables=collections.Counter({var:power}))
+    return ast.mul([term1, term2]), ast.term(coeff=1, variables=collections.Counter({var: power}))

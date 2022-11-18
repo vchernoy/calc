@@ -1,6 +1,7 @@
 import math
 import functools
 import symexpr.ast as ast
+from symexpr import evaluators
 
 
 @functools.singledispatch
@@ -81,3 +82,7 @@ def _exp_evalf(expr: ast.Exp) -> ast.Node:
     scalars = [n for n in evaluated if n.numeric()]
 
     return ast.term(coeff=expr.coeff * math.exp(scalars[0].coeff), variables=expr.vars)
+
+@evalf.register
+def _evalf_evalf(expr: ast.Evalf) -> ast.Node:
+    return ast.new_with(expr=evaluators.evalf(expr.operands[0]), variables=expr.vars, coeff=expr.coeff)
