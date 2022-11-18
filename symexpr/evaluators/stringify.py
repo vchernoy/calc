@@ -85,8 +85,11 @@ def _one_stringify(self: ast.One, in_parenthesis: bool = False) -> str:
     return f'({res})' if around_parenthesis else res
 
 
-@stringify.register
-def _log_stringify(self: ast.Log, in_parenthesis: bool = False) -> str:
+@stringify.register(ast.Exp)
+@stringify.register(ast.Log)
+@stringify.register(ast.Evalf)
+@stringify.register(ast.Expand)
+def _stringify(self: ast.Log, in_parenthesis: bool = False) -> str:
     res = ''
     if self.coeff == -1:
         res = '-'
@@ -96,54 +99,6 @@ def _log_stringify(self: ast.Log, in_parenthesis: bool = False) -> str:
     if self.vars:
         res += _vars_to_str(self) + '*'
 
-    res += 'log ' + stringify(self.operands[0], True)
-
-    return f'({res})' if in_parenthesis else res
-
-
-@stringify.register
-def _exp_stringify(self: ast.Exp, in_parenthesis: bool = False) -> str:
-    res = ''
-    if self.coeff == -1:
-        res = '-'
-    elif self.coeff != 1:
-        res = str(self.coeff)
-
-    if self.vars:
-        res += _vars_to_str(self) + '*'
-
-    res += 'exp ' + stringify(self.operands[0], True)
-
-    return f'({res})' if in_parenthesis else res
-
-
-@stringify.register
-def _evalf_stringify(self: ast.Evalf, in_parenthesis: bool = False) -> str:
-    res = ''
-    if self.coeff == -1:
-        res = '-'
-    elif self.coeff != 1:
-        res = str(self.coeff)
-
-    if self.vars:
-        res += _vars_to_str(self) + '*'
-
-    res += 'evalf ' + stringify(self.operands[0], True)
-
-    return f'({res})' if in_parenthesis else res
-
-
-@stringify.register
-def _evalf_stringify(self: ast.Expand, in_parenthesis: bool = False) -> str:
-    res = ''
-    if self.coeff == -1:
-        res = '-'
-    elif self.coeff != 1:
-        res = str(self.coeff)
-
-    if self.vars:
-        res += _vars_to_str(self) + '*'
-
-    res += 'expand ' + stringify(self.operands[0], True)
+    res += self.operation.name + ' ' + stringify(self.operands[0], True)
 
     return f'({res})' if in_parenthesis else res
