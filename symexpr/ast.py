@@ -51,13 +51,6 @@ class Node:
     def degree(self, var: str = None) -> int:
         raise NotImplemented()
 
-    # def vars(self) -> Vars:
-    #     res = set(self.vars.keys())
-    #     for n in self.operands:
-    #         res.update(n.vars())
-    #
-    #     return res
-
     def numeric(self) -> bool:
         raise NotImplemented()
 
@@ -280,7 +273,7 @@ def mul(operands: Nodes, variables: VarTerm = None, coefficient: Num = 1) -> Nod
 
 
 def neg(expr: Node) -> Node | None:
-    return new_with(expr=expr, coefficient=-1)  if expr else None
+    return new_with(expr=expr, coefficient=-1) if expr else None
 
 
 def inv(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> One | Inv:
@@ -290,23 +283,23 @@ def inv(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> One | In
     if not expr:
         return term(coefficient=coefficient, variables=variables)
 
-    if expr.coefficient != 0 and not expr.vars and expr.operation == OpKind.one:
-        if type(coefficient) == type(expr.coefficient) == int:
-            gcd_val = math.gcd(coefficient, expr.coefficient)
-            res_coefficient = coefficient // gcd_val
-            inv_coefficient = expr.coefficient // gcd_val
-            if inv_coefficient < 0:
-                res_coefficient = -res_coefficient
-                inv_coefficient = -inv_coefficient
+    if expr.coefficient == 0 or expr.vars or expr.operation != OpKind.one:
+        return Inv(operands=[expr], variables=variables, coefficient=coefficient)
 
-            if inv_coefficient == 1:
-                return term(variables=variables, coefficient=res_coefficient)
-
-            return Inv(operands=[number(inv_coefficient)], variables=variables, coefficient=res_coefficient)
-
+    if type(coefficient) != int or type(expr.coefficient) != int:
         return term(variables=variables, coefficient=coefficient / expr.coefficient)
 
-    return Inv(operands=[expr], variables=variables, coefficient=coefficient)
+    gcd_val = math.gcd(coefficient, expr.coefficient)
+    res_coefficient = coefficient // gcd_val
+    inv_coefficient = expr.coefficient // gcd_val
+    if inv_coefficient < 0:
+        res_coefficient = -res_coefficient
+        inv_coefficient = -inv_coefficient
+
+    if inv_coefficient == 1:
+        return term(variables=variables, coefficient=res_coefficient)
+
+    return Inv(operands=[number(inv_coefficient)], variables=variables, coefficient=res_coefficient)
 
 
 def log(expr: Node, variables: VarTerm = None, coefficient: Num = 1) -> One | Log:

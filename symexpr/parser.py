@@ -32,9 +32,6 @@ class Error:
         return self.msg
 
 
-Errors: typing.TypeAlias = list[Error]
-
-
 class TokenReader:
     """
     Provides to the next token from the input.
@@ -54,6 +51,8 @@ class TokenReader:
         self.loc += 1
         return tok
 
+
+Errors: typing.TypeAlias = list[Error]
 
 """
 The sets of tokens that each rule starts from.
@@ -283,9 +282,7 @@ def parse_expr_in_parenthesis(reader: TokenReader, errors: Errors):
 
 def find_expected(reader: TokenReader, expected_tokens: set[tokenizer.Type], errors: Errors) -> bool:
     if reader.look_next().typ not in expected_tokens:
-        errors.append(
-            Error(expected_tokens=expected_tokens, received_token=reader.look_next())
-        )
+        errors.append(Error(expected_tokens=expected_tokens, received_token=reader.look_next()))
         while reader.look_next().typ != tokenizer.Type.eol and reader.look_next().typ not in expected_tokens:
             reader.move_next()
 
