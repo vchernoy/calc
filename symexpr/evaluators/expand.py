@@ -1,4 +1,6 @@
 import functools
+from typing import Callable
+
 import symexpr.ast as ast
 from symexpr import evaluators
 
@@ -31,9 +33,16 @@ def _expand(expr) -> ast.Node:
     )
 
 
-@expand.register
-def _evalf_expand(expr: ast.Evalf) -> ast.Node:
-    return ast.new_with(expr=evaluators.evalf(expr.operands[0]), variables=expr.vars, coeff=expr.coeff)
+@expand.register(ast.Evalf)
+@expand.register(ast.Expand)
+def _expand(expr) -> ast.Node:
+    apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
+        ast.OpKind.evalf: evaluators.evalf,
+        ast.OpKind.expand: evaluators.expand,
+    }
+    arg = apply[expr.operation](expr.operands[0])
+    arg = evaluators.simplify(arg)
+    return ast.new_with(expr=arg, variables=expr.vars, coeff=expr.coeff)
 
 
 @expand.register

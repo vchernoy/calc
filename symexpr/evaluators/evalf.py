@@ -1,5 +1,7 @@
 import math
 import functools
+from collections.abc import Callable
+
 import symexpr.ast as ast
 from symexpr import evaluators
 
@@ -77,12 +79,20 @@ def _exp_evalf(expr: ast.Exp) -> ast.Node:
     evaluated = [evalf(n) for n in expr.operands]
     non_scalars = [n for n in evaluated if not n.numeric()]
     if non_scalars:
-        return ast.log(non_scalars[0], coeff=expr.coeff, variables=expr.vars)
+        return ast.exp(non_scalars[0], coeff=expr.coeff, variables=expr.vars)
 
     scalars = [n for n in evaluated if n.numeric()]
 
     return ast.term(coeff=expr.coeff * math.exp(scalars[0].coeff), variables=expr.vars)
 
-@evalf.register
-def _evalf_evalf(expr: ast.Evalf) -> ast.Node:
-    return ast.new_with(expr=evaluators.evalf(expr.operands[0]), variables=expr.vars, coeff=expr.coeff)
+
+@evalf.register(ast.Evalf)
+@evalf.register(ast.Expand)
+def _evalf(expr) -> ast.Node:
+    apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
+        ast.OpKind.evalf: evaluators.evalf,
+        ast.OpKind.expand: evaluators.expand,
+    }
+    arg = apply[expr.operation](expr.operands[0])
+    arg = evaluators.simplify(arg)
+    return ast.new_with(expr=arg, variables=expr.vars, coeff=expr.coeff)

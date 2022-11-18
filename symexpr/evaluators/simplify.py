@@ -1,6 +1,8 @@
 import collections
 import functools
 import itertools
+from collections.abc import Callable
+
 import symexpr.ast as ast
 from symexpr import evaluators
 
@@ -74,14 +76,17 @@ def _log_simplify(expr: ast.Log) -> ast.Node:
     )
 
 
-@simplify.register
-def _evalf_simplify(expr: ast.Evalf) -> ast.Node:
-    return ast.new_with(expr=evaluators.evalf(expr.operands[0]), variables=expr.vars, coeff=expr.coeff)
-
-
-@simplify.register
-def _expand_simplify(expr: ast.Expand) -> ast.Node:
-    return ast.new_with(expr=evaluators.expand(expr.operands[0]), variables=expr.vars, coeff=expr.coeff)
+@simplify.register(ast.Evalf)
+@simplify.register(ast.Expand)
+def _simplify(expr) -> ast.Node:
+    apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
+        ast.OpKind.evalf: evaluators.evalf,
+        ast.OpKind.expand: evaluators.expand,
+    }
+    arg = evaluators.simplify(expr.operands[0])
+    arg = apply[expr.operation](arg)
+    arg = evaluators.simplify(arg)
+    return ast.new_with(expr=arg, variables=expr.vars, coeff=expr.coeff)
 
 
 @simplify.register
@@ -150,7 +155,7 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
     evaluated3 = [n for n in evaluated2 if n.operation != ast.OpKind.inv]
     inv_coeff = 1
     for n in evaluated2:
-        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf], f'received: {n.operation}'
+        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf]
         assert n.coeff == 1
         assert not n.vars
 

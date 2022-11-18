@@ -160,6 +160,55 @@ the generated assignment to be substituted is {'z': -993.7582746474194}
 random assignment gives 0
 ```
 
+```
+input > exp(((b+a)*(a+1) - a*b - a*a))
+parsed expression: exp (((b+a)*(a+1))+(-a*b)+(-a*a))
+simplified expression: (exp (-a*b))*(exp (-a*a))*(exp ((b+a)*(1+a)))
+```
+
+```
+input > expand(exp(((b+a)*(a+1) - a*b - a*a)))
+parsed expression: expand (exp (((b+a)*(a+1))+(-a*b)+(-a*a)))
+simplified expression: (exp b)*(exp a)
+```
+
+```
+input > exp (((3+a)*(a+1) - a*3 - a*a - a))
+parsed expression: exp (((3+a)*(a+1))+(-a*3)+(-a*a)+(-a))
+simplified expression: (exp (-4a))*(exp (-a*a))*(exp ((3+a)*(1+a)))
+```
+
+```
+input > exp (((3+a)*(a+1) - a*3 - a*a))
+parsed expression: exp (((3+a)*(a+1))+(-a*3)+(-a*a))
+simplified expression: (exp (-3a))*(exp (-a*a))*(exp ((3+a)*(1+a)))
+```
+
+```
+input > exp( expand (((3+a)*(a+1) - a*3 - a*a)) )
+parsed expression: exp (expand (((3+a)*(a+1))+(-a*3)+(-a*a)))
+simplified expression: (exp 3)*(exp a)
+```
+
+```
+input > evalf( exp( expand (((3+a)*(a+1) - a*3 - a*a)) ) )
+parsed expression: evalf (exp (expand (((3+a)*(a+1))+(-a*3)+(-a*a))))
+simplified expression: 20.085536923187668exp a
+```
+
+```
+input > exp expand (((3+a)*(a+1) - a*3 - a*a - a))
+parsed expression: exp (expand (((3+a)*(a+1))+(-a*3)+(-a*a)+(-a)))
+simplified expression: exp 3
+approximate evaluation: 20.085536923187668
+```
+
+```
+input > evalf( exp( expand (((3+a)*(a+1) - a*3 - a*a - a)) ) )
+parsed expression: evalf (exp (expand (((3+a)*(a+1))+(-a*3)+(-a*a)+(-a))))
+simplified expression: 20.085536923187668
+```
+
 It also can handle expressions (and equations) of multiple free variable.
 It runs the same algorithms to simplify/expand/evaluate and then, 
 if the expression still has variables, 
@@ -210,6 +259,8 @@ Let's first define num and id lexemes:
 * PE := `(` E `)`
 * F := `log` SP
 * F := `exp` SP
+* F := `expand` SP
+* F := `evalf` SP
 
 Examples:
 

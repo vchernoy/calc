@@ -151,6 +151,8 @@ def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
     P := (ID | F | PE) ('*'|'/' P)*
     F := 'log' SP
     F := 'exp' SP
+    F := 'expand' SP
+    F := 'evalf' SP
     :param reader:
     :param errors:
     :return: AST
@@ -216,6 +218,8 @@ def parse_short_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
     SP := F
     F := 'log' SP
     F := 'exp' SP
+    F := 'expand' SP
+    F := 'evalf' SP
     :param reader:
     :param errors:
     :return: AST
@@ -242,6 +246,8 @@ def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node|None:
     VF := ID | F
     F := 'log' SP
     F := 'exp' SP
+    F := 'expand' SP
+    F := 'evalf' SP
     :param reader:
     :param errors:
     :return: AST

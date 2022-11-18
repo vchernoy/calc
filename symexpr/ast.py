@@ -63,17 +63,22 @@ class Node:
         return ','.join(f'{v}^{p}' for v, p in sorted(self.vars.items()))
 
     def __repr__(self) -> str:
-        r = [f'{self.operation}', f'{self.coeff}', f'{self.vars}']
+        r = [self.operation.name]
+        if self.coeff != 1:
+            r.append(f'{self.coeff}')
+
+        if self.vars:
+            r.append('(' + ' '.join(f"{v}^{p}" for v, p in self.vars.items()) + ')')
+
         if self.operands:
             r.extend(repr(o) for o in self.operands)
 
-        return f'[{r}]'
+        return '[' + ', '.join(r) + ']'
 
     def __str__(self, in_parenthesis: bool = False) -> str:
         import symexpr.evaluators as evaluators
 
         return evaluators.stringify(self, in_parenthesis)
-        # raise NotImplemented()
 
 
 class Add(Node):

@@ -1,6 +1,9 @@
 import collections
 import functools
+from collections.abc import Callable
+
 import symexpr.ast as ast
+from symexpr import evaluators
 from symexpr.evaluators.expand import expand
 
 
@@ -115,3 +118,15 @@ def _add_solve(expr: ast.Add, var: str) -> tuple[ast.Node, ast.Node] | None:
     term2 = ast.inv(ast.add(reduced_var_terms))
 
     return ast.mul([term1, term2]), ast.term(coeff=1, variables=collections.Counter({var: power}))
+
+
+@solve.register(ast.Evalf)
+@solve.register(ast.Expand)
+def _solve(expr, var: str) -> tuple[ast.Node, ast.Node] | None:
+    apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
+        ast.OpKind.evalf: evaluators.evalf,
+        ast.OpKind.expand: evaluators.expand,
+    }
+    arg = apply[expr.operation](expr.operands[0])
+    arg = evaluators.simplify(arg)
+    return solve(ast.new_with(expr=arg, variables=expr.vars, coeff=expr.coeff), var)
