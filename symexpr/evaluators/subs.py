@@ -1,3 +1,4 @@
+import collections
 import math
 import itertools
 import symexpr.ast as ast
@@ -14,11 +15,11 @@ def subs(expr: ast.Node, assignment: dict[str, ast.Num]) -> ast.Node:
     return ast.new(
         operation=expr.operation,
         operands=[subs(n, assignment) for n in expr.operands],
-        coefficient=math.prod(
+        coeff=math.prod(
             (assignment[v] ** p for v, p in expr.vars.items() if v in assignment),
-            start=expr.coefficient
+            start=expr.coeff
         ),
-        variables={v: p for v, p in expr.vars.items() if v not in assignment}
+        variables=collections.Counter({v: p for v, p in expr.vars.items() if v not in assignment})
     )
 
 
@@ -36,8 +37,8 @@ def subse(expr: ast.Node, assignment: dict[str, ast.Node]) -> ast.Node:
             ast.new(
                 operation=expr.operation,
                 operands=[subse(n, assignment) for n in expr.operands],
-                coefficient=expr.coefficient,
-                variables={v: p for v, p in expr.vars.items() if v not in assignment}
+                coeff=expr.coeff,
+                variables=collections.Counter({v: p for v, p in expr.vars.items() if v not in assignment})
             )
         ]
     )

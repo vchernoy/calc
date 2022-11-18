@@ -4,26 +4,26 @@ import symexpr.ast as ast
 
 
 @functools.singledispatch
-def stringify(expr, in_parenthesis: bool = False) -> str:
+def stringify(_1, _2: bool = False) -> str:
     """
-    :param in_parenthesis:
-    :param expr: AST
+    :param _1: AST
+    :param _2: bool
     :return: AST
     """
     raise TypeError('cannot stringify {expr}, {in_parenthesis=}')
 
 
-def _vars_to_str(expr: ast.Node) -> str:
-    return '*'.join(itertools.chain.from_iterable([v] * d for v,d in sorted(expr.vars.items())))
+def _vars_to_str(expr: ast.Node, _: bool = False) -> str:
+    return '*'.join(itertools.chain.from_iterable([v] * d for v, d in sorted(expr.vars.items())))
 
 
 @stringify.register
 def _add_stringify(self: ast.Add, in_parenthesis: bool = False) -> str:
     res = ''
-    if self.coefficient == -1:
+    if self.coeff == -1:
         res = '-'
-    elif self.coefficient != 1:
-        res = str(self.coefficient)
+    elif self.coeff != 1:
+        res = str(self.coeff)
 
     if self.vars:
         res += _vars_to_str(self) + '*'
@@ -42,10 +42,10 @@ def _add_stringify(self: ast.Add, in_parenthesis: bool = False) -> str:
 @stringify.register
 def _mul_stringify(self: ast.Mul, in_parenthesis: bool = False) -> str:
     res = ''
-    if self.coefficient == -1:
+    if self.coeff == -1:
         res = '-'
-    elif self.coefficient != 1:
-        res = str(self.coefficient)
+    elif self.coeff != 1:
+        res = str(self.coeff)
 
     if self.vars:
         res += _vars_to_str(self) + '*('
@@ -59,10 +59,10 @@ def _mul_stringify(self: ast.Mul, in_parenthesis: bool = False) -> str:
 
 @stringify.register
 def _inv_stringify(self: ast.Inv, in_parenthesis: bool = False) -> str:
-    if self.coefficient == -1 and self.vars:
+    if self.coeff == -1 and self.vars:
         res = '-'
-    elif self.coefficient != 1 or not self.vars:
-        res = str(self.coefficient)
+    elif self.coeff != 1 or not self.vars:
+        res = str(self.coeff)
     else:
         res = ''
 
@@ -75,23 +75,23 @@ def _inv_stringify(self: ast.Inv, in_parenthesis: bool = False) -> str:
 @stringify.register
 def _one_stringify(self: ast.One, in_parenthesis: bool = False) -> str:
     res = ''
-    if self.coefficient == -1 and self.vars:
+    if self.coeff == -1 and self.vars:
         res = '-'
-    elif self.coefficient != 1 or not self.vars:
-        res = str(self.coefficient)
+    elif self.coeff != 1 or not self.vars:
+        res = str(self.coeff)
 
     res += _vars_to_str(self)
-    around_parenthesis = in_parenthesis and ((self.coefficient != 1 and self.vars) or self.coefficient < 0)
+    around_parenthesis = in_parenthesis and ((self.coeff != 1 and self.vars) or self.coeff < 0)
     return f'({res})' if around_parenthesis else res
 
 
 @stringify.register
 def _log_stringify(self: ast.Log, in_parenthesis: bool = False) -> str:
     res = ''
-    if self.coefficient == -1:
+    if self.coeff == -1:
         res = '-'
-    elif self.coefficient != 1:
-        res = str(self.coefficient)
+    elif self.coeff != 1:
+        res = str(self.coeff)
 
     if self.vars:
         res += _vars_to_str(self) + '*'
@@ -102,12 +102,12 @@ def _log_stringify(self: ast.Log, in_parenthesis: bool = False) -> str:
 
 
 @stringify.register
-def _exp_stringify(self:ast.Exp, in_parenthesis: bool = False) -> str:
+def _exp_stringify(self: ast.Exp, in_parenthesis: bool = False) -> str:
     res = ''
-    if self.coefficient == -1:
+    if self.coeff == -1:
         res = '-'
-    elif self.coefficient != 1:
-        res = str(self.coefficient)
+    elif self.coeff != 1:
+        res = str(self.coeff)
 
     if self.vars:
         res += _vars_to_str(self) + '*'
@@ -115,4 +115,3 @@ def _exp_stringify(self:ast.Exp, in_parenthesis: bool = False) -> str:
     res += 'exp ' + stringify(self.operands[0], True)
 
     return f'({res})' if in_parenthesis else res
-

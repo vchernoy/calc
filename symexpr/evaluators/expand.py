@@ -27,20 +27,20 @@ def _expand(expr) -> ast.Node:
         operation=expr.operation,
         variables=expr.vars,
         operands=evaluated,
-        coefficient=expr.coefficient
+        coeff=expr.coeff
     )
 
 
 @expand.register
 def _add_expand(expr: ast.Add) -> ast.Node:
-    term = ast.term(coefficient=expr.coefficient, variables=expr.vars)
+    term = ast.term(coeff=expr.coeff, variables=expr.vars)
     expanded = [expand(n) for n in expr.operands]
 
     node = simplify(ast.add(operands=expanded))
     if node.operation != ast.OpKind.add:
         return simplify(ast.mul(operands=[term, node]))
 
-    term1 = ast.term(coefficient=node.coefficient, variables=node.vars)
+    term1 = ast.term(coeff=node.coeff, variables=node.vars)
     terms = [simplify(ast.mul(operands=[term, t, term1])) for t in node.operands]
 
     return simplify(ast.add(terms))
@@ -48,7 +48,7 @@ def _add_expand(expr: ast.Add) -> ast.Node:
 
 @expand.register
 def _mul_expand(expr: ast.Mul) -> ast.Node:
-    term = ast.term(coefficient=expr.coefficient, variables=expr.vars)
+    term: ast.Node = ast.term(coeff=expr.coeff, variables=expr.vars)
     expanded: list[ast.Node] = [term] + [expand(n) for n in expr.operands]
 
     res = [ast.number(1)]

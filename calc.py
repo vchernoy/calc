@@ -82,9 +82,9 @@ def main():
                         subs_attempts.sort(key=lambda n: len(str(n)))
                         simplified_subs = subs_attempts[0]
                         print(f'substitutes the solution to the original expression: {simplified_subs}')
-                        if simplified_subs.numeric() and simplified_subs.coefficient == 0:
+                        if simplified_subs.numeric() and simplified_subs.coeff == 0:
                             print('correct, 0 is expected')
-                        elif simplified_subs.numeric() and abs(simplified_subs.coefficient) < 1e-10:
+                        elif simplified_subs.numeric() and abs(simplified_subs.coeff) < 1e-10:
                             print('correct, close to 0 is expected')
                         elif ast.all_vars(simplified_subs):
                             free_vars = ast.all_vars(simplified_subs)
@@ -97,9 +97,9 @@ def main():
                             final_attempts.sort(key=lambda n: len(str(n)))
                             final_subs = final_attempts[0]
                             print(f'random assignment gives {final_subs}')
-                            if final_subs.numeric() and final_subs.coefficient == 0:
+                            if final_subs.numeric() and final_subs.coeff == 0:
                                 print('correct, 0 is expected')
-                            elif final_subs.numeric() and abs(final_subs.coefficient) < 1e-10:
+                            elif final_subs.numeric() and abs(final_subs.coeff) < 1e-10:
                                 print('correct, close to 0 is expected')
                             else:
                                 print('ups... something wrong happened, test it more!')
