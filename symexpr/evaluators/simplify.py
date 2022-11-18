@@ -80,6 +80,11 @@ def _evalf_simplify(expr: ast.Evalf) -> ast.Node:
 
 
 @simplify.register
+def _expand_simplify(expr: ast.Expand) -> ast.Node:
+    return ast.new_with(expr=evaluators.expand(expr.operands[0]), variables=expr.vars, coeff=expr.coeff)
+
+
+@simplify.register
 def _add_simplify(expr: ast.Add) -> ast.Node:
     evaluated0 = [simplify(n) for n in expr.operands]
     evaluated = []
