@@ -1,3 +1,4 @@
+import itertools
 import random
 import symexpr.ast as ast
 import symexpr.tokenizer as tokenizer
@@ -13,7 +14,7 @@ It will prompt for input string (expression)
 """
 
 
-def all_ways_to_compute(expr) -> list:
+def all_ways_to_compute(expr: ast.Node) -> list[ast.Node]:
     return [
         evaluators.simplify(expr),
         evaluators.expand(evaluators.simplify(expr)),
@@ -28,7 +29,7 @@ def main():
         inp = input(f'input {n_line} > ')
         toks = tokenizer.tokenize(tokenizer.Scanner(inp))
         tok_list = list(toks)
-        if (len(tok_list) == 1) and (tok_list[0].typ == tokenizer.Type.eol):
+        if len(tok_list) == 1 and tok_list[0].typ == tokenizer.Type.eol:
             break
 
         tok_reader = parser.TokenReader(tok_list)
@@ -40,7 +41,6 @@ def main():
             buf = [' '] * (len(inp) + 1)
             for err in errors:
                 buf[err.loc] = '^'
-                err_loc = err.loc
 
             print(inp)
             print(''.join(buf))
@@ -56,16 +56,11 @@ def main():
             print(f'simplified expression: {simplified}')
 
             variables = ast.all_vars(simplified)
-
             if variables:
                 print("equation on '" + "', '".join(variables) + "' is detected")
-                var = variables.pop()
-                variables.add(var)
-                if len(variables) > 1:
-                    var = [v for v in ('x', 'y', 'z', 'a', 'b', 'c', var) if v in variables][0]
+                var = next(itertools.chain([v for v in 'xyzabc' if v in variables], variables))
 
                 print(f'trying to solve equation on variable {var}')
-
                 solve_res = evaluators.solve(simplified, var)
                 if solve_res:
                     root, root_expr = solve_res
@@ -87,9 +82,9 @@ def main():
                         subs_attempts.sort(key=lambda n: len(str(n)))
                         simplified_subs = subs_attempts[0]
                         print(f'substitutes the solution to the original expression: {simplified_subs}')
-                        if simplified_subs.numeric() and (simplified_subs.coefficient == 0):
+                        if simplified_subs.numeric() and simplified_subs.coefficient == 0:
                             print('correct, 0 is expected')
-                        elif simplified_subs.numeric() and (abs(simplified_subs.coefficient) < 1e-10):
+                        elif simplified_subs.numeric() and abs(simplified_subs.coefficient) < 1e-10:
                             print('correct, close to 0 is expected')
                         elif ast.all_vars(simplified_subs):
                             free_vars = ast.all_vars(simplified_subs)
@@ -102,9 +97,9 @@ def main():
                             final_attempts.sort(key=lambda n: len(str(n)))
                             final_subs = final_attempts[0]
                             print(f'random assignment gives {final_subs}')
-                            if final_subs.numeric() and (final_subs.coefficient == 0):
+                            if final_subs.numeric() and final_subs.coefficient == 0:
                                 print('correct, 0 is expected')
-                            elif final_subs.numeric() and (abs(final_subs.coefficient) < 1e-10):
+                            elif final_subs.numeric() and abs(final_subs.coefficient) < 1e-10:
                                 print('correct, close to 0 is expected')
                             else:
                                 print('ups... something wrong happened, test it more!')

@@ -6,7 +6,7 @@ import unittest
 
 class TestCalc(unittest.TestCase):
     def test_table(self):
-        table = (
+        table: tuple[str,...] = (
             '0', '000', '+0', '1', '-1', '1234', '-903341234', '13156545', '00013145353',
         )
         for inp in table:
@@ -20,7 +20,7 @@ class TestCalc(unittest.TestCase):
             self.assertEqual(str(expr2), expected)
 
     def test_int_arith(self):
-        table = (
+        table: tuple[tuple[str, str],...] = (
             ('1+2+3+4+5+6+7+8+9', '45'),
             ('-1+1' * 20, '0'),
             ('-1+2' * 20, '20'),
@@ -41,7 +41,7 @@ class TestCalc(unittest.TestCase):
 
     def test_int_range(self):
         for n in range(2000):
-            for inp in str(n), f'+{n}', f'-{n}':
+            for inp in f'{n}', f'+{n}', f'-{n}':
                 expected = str(int(inp))
                 expr, errors = parse(inp)
                 self.assertEqual(errors, [])
@@ -52,7 +52,7 @@ class TestCalc(unittest.TestCase):
                 self.assertEqual(str(expr2), expected)
 
     def test_float_arith(self):
-        table = (
+        table: tuple[tuple[str, float],...] = (
             ('1.+2.+3.+4.+5.+6.+7.+8.+9.', 45.0),
             ('-1.+1.' * 20, 0.),
             ('-1.+2.' * 20, 20.0),
@@ -72,7 +72,7 @@ class TestCalc(unittest.TestCase):
             self.assertEqual(float(str(expr2)), expected)
 
     def test_numeric_arith(self):
-        table = (
+        table: tuple[tuple[str, float],...] = (
             ('1.+2.+3.+4.+5.+6.+7.+8.+9.', 45.0),
             ('-1.+1.' * 20, 0.),
             ('-1.+2.' * 20, 20.0),
@@ -93,8 +93,8 @@ class TestCalc(unittest.TestCase):
 
     def test_harmonic_num(self):
         gama = 0.577265669068499
-        for n in [100, 1000, 10000]:
-            inp = '+'.join(('1/' + str(j)) for j in range(1, n + 1)) + '-log(' + str(n) + ')'
+        for n in 100, 1000, 10000:
+            inp = f'{" + ".join(("1/" + str(j)) for j in range(1, n + 1))} - log({n})'
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
             val = float(str(evaluators.evalf(expr)))
@@ -109,7 +109,7 @@ class TestCalc(unittest.TestCase):
     def test_float_range(self):
         for m in range(2000):
             n = m / 5
-            for inp in str(n), f'+{n}', f'-{n}':
+            for inp in f'{n}', f'+{n}', f'-{n}':
                 expected = float(inp)
                 expr, errors = parse(inp)
                 self.assertEqual(errors, [])
@@ -122,7 +122,7 @@ class TestCalc(unittest.TestCase):
     def test_float_e_range(self):
         for m in range(2000):
             n = m / 5
-            for inp in str(n) + 'E-20', f'+{n}e+10', f'-{n}e15':
+            for inp in f'{n}' + 'E-20', f'+{n}e+10', f'-{n}e15':
                 expected = float(inp)
                 expr, errors = parse(inp)
                 self.assertEqual(errors, [])
@@ -133,8 +133,8 @@ class TestCalc(unittest.TestCase):
                 self.assertEqual(float(str(expr2)), expected)
 
     def test_binomial_num(self):
-        for n in [10, 100, 1000]:
-            inp = '*'.join(['(2.-1.)'] * n)
+        for n in 10, 100, 1000:
+            inp = ' * '.join(['(2. - 1.)'] * n)
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
             val = float(str(evaluators.evalf(expr)))
@@ -148,10 +148,10 @@ class TestCalc(unittest.TestCase):
 
     def test_symbolic(self):
         for n in 1, 10, 20, 100, 101:
-            inp = '*'.join(['(a+b)*(a-b)'] * n)
+            inp = ' * '.join(['(a+b) * (a-b)'] * n)
             expr, errors = parse(inp)
             exprs = [expr, evaluators.simplify(expr), evaluators.expand(expr), evaluators.expand(evaluators.simplify(expr))]
-            for assignment in [{'a': 2, 'b': 1}]:
+            for assignment in {'a': 2, 'b': 1}, :
                 expected = (assignment['a'] ** 2 - assignment['b'] ** 2) ** n
                 for expr in exprs:
                     expr0 = evaluators.subs(expr, assignment)

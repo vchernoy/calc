@@ -1,16 +1,18 @@
+from collections.abc import Iterable
+
 import symexpr.tokenizer as tokenizer
 import symexpr.ast as ast
 import typing
 
 
 class Error:
-    def __init__(self, expected_tokens: set[tokenizer.Type], received_token: tokenizer.Token):
-        self.loc: int = received_token.loc
-        self.expected_tokens: set[tokenizer.Type] = expected_tokens
-        self.received_token: tokenizer.Token = received_token
+    def __init__(self, expected: set[tokenizer.Type], received: tokenizer.Token):
+        self.loc: int = received.loc
+        self.expected: set[tokenizer.Type] = expected
+        self.received: tokenizer.Token = received
 
-        exp_simple_toks = "','".join(str(t.value) for t in expected_tokens if t.value in tokenizer.simple_tokens)
-        exp_other_toks = ",".join(str(t.value) for t in expected_tokens if t.value not in tokenizer.simple_tokens)
+        exp_simple_toks = "','".join(str(t.value) for t in expected if t.value in tokenizer.simple_tokens)
+        exp_other_toks = ",".join(str(t.value) for t in expected if t.value not in tokenizer.simple_tokens)
 
         exp_toks = f"'{exp_simple_toks}'" if exp_simple_toks else ""
         if exp_other_toks:
@@ -19,11 +21,11 @@ class Error:
 
             exp_toks += exp_other_toks
 
-        if received_token.typ == tokenizer.Type.error:
-            err = received_token.err
-            self.msg = f"error @ {self.loc}: invalid char: '{err.next_char}', expected tokens: {exp_toks} (chars: {err.expected_chars})"
+        if received.typ == tokenizer.Type.error:
+            err = received.err
+            self.msg = f"error @ {self.loc}: invalid: '{err.ahead}', expected: {exp_toks} (chars: {err.expected})"
         else:
-            self.msg = f"error @ {self.loc}: unexpected token: {received_token.typ.value}, expected tokens: {exp_toks}"
+            self.msg = f"error @ {self.loc}: unexpected: {received.typ.value}, expected: {exp_toks}"
 
     def __str__(self) -> str:
         return repr(self)
@@ -77,7 +79,7 @@ all_tokens: set[tokenizer.Type] = {
 }
 
 
-def parse(reader: TokenReader, errors: Errors):
+def parse(reader: TokenReader, errors: Errors) -> ast.Node|None:
     """
     Recognizes:
     EE := E [= E]
@@ -97,7 +99,7 @@ def parse(reader: TokenReader, errors: Errors):
     return tree
 
 
-def parse_expr(reader: TokenReader, errors: Errors):
+def parse_expr(reader: TokenReader, errors: Errors) -> ast.Node|None:
     """
     Recognizes the rule:
     EE := E [= E]
@@ -109,7 +111,7 @@ def parse_expr(reader: TokenReader, errors: Errors):
     return parse_sum(reader, errors)
 
 
-def parse_sum(reader: TokenReader, errors: Errors):
+def parse_sum(reader: TokenReader, errors: Errors) -> ast.Node|None:
     """
     Recognizes the rule:
     S := ['+'|'-'] P ('+'|'-' P)*
@@ -122,7 +124,7 @@ def parse_sum(reader: TokenReader, errors: Errors):
         return None
 
     neg = reader.look_next().typ == tokenizer.Type.sub
-    if reader.look_next().typ in [tokenizer.Type.add, tokenizer.Type.sub]:
+    if reader.look_next().typ in (tokenizer.Type.add, tokenizer.Type.sub):
         reader.move_next()
 
     tree = parse_product(reader, errors)
@@ -131,7 +133,7 @@ def parse_sum(reader: TokenReader, errors: Errors):
 
     operands = [tree]
     if find_expected(reader, all_tokens | {tokenizer.Type.eol}, errors):
-        while reader.look_next().typ in {tokenizer.Type.add, tokenizer.Type.sub}:
+        while reader.look_next().typ in (tokenizer.Type.add, tokenizer.Type.sub):
             neg = reader.look_next().typ == tokenizer.Type.sub
             reader.move_next()
             tree = parse_product(reader, errors)
@@ -143,7 +145,7 @@ def parse_sum(reader: TokenReader, errors: Errors):
     return ast.add(operands)
 
 
-def parse_product(reader: TokenReader, errors: Errors):
+def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
     """
     Recognizes the rules:
     P := num ('*'|'/' P)*
@@ -196,8 +198,8 @@ def parse_product(reader: TokenReader, errors: Errors):
         elif tok.typ == tokenizer.Type.div:
             operation = ast.OpKind.inv
             reader.move_next()
-        elif prev_tok.typ == tokenizer.Type.number and tok.typ in {tokenizer.Type.id, tokenizer.Type.l_paren} \
-                and (operation in [None, ast.OpKind.mul]):
+        elif prev_tok.typ == tokenizer.Type.number and tok.typ in (tokenizer.Type.id, tokenizer.Type.l_paren) \
+                and operation in (None, ast.OpKind.mul):
             operation = ast.OpKind.mul
         else:
             break
@@ -205,7 +207,7 @@ def parse_product(reader: TokenReader, errors: Errors):
     return ast.mul(operands)
 
 
-def parse_short_product(reader: TokenReader, errors: Errors):
+def parse_short_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
     """
     Recognizes the rules:
     SP := PE
@@ -236,7 +238,7 @@ def parse_short_product(reader: TokenReader, errors: Errors):
     return ast.mul(operands)
 
 
-def parse_var_or_func(reader: TokenReader, errors: Errors):
+def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node|None:
     """
     Recognizes the rules:
     VF := ID | F
@@ -260,7 +262,7 @@ def parse_var_or_func(reader: TokenReader, errors: Errors):
     return tree
 
 
-def parse_expr_in_parenthesis(reader: TokenReader, errors: Errors):
+def parse_expr_in_parenthesis(reader: TokenReader, errors: Errors) -> ast.Node|None:
     """
     Recognizes the rules:
     E := '(' E ')'
@@ -282,7 +284,7 @@ def parse_expr_in_parenthesis(reader: TokenReader, errors: Errors):
 
 def find_expected(reader: TokenReader, expected_tokens: set[tokenizer.Type], errors: Errors) -> bool:
     if reader.look_next().typ not in expected_tokens:
-        errors.append(Error(expected_tokens=expected_tokens, received_token=reader.look_next()))
+        errors.append(Error(expected=expected_tokens, received=reader.look_next()))
         while reader.look_next().typ != tokenizer.Type.eol and reader.look_next().typ not in expected_tokens:
             reader.move_next()
 

@@ -1,5 +1,8 @@
 import enum
 import string
+from collections.abc import Iterable
+from typing import Generator
+
 import symexpr.ast as ast
 
 
@@ -34,16 +37,16 @@ simple_tokens: dict[str, Type] = {t.value: t for t in [
 
 
 class Error:
-    def __init__(self, loc: int, expected_chars: list[str], parsed_chars, next_char):
+    def __init__(self, loc: int, expected: list[str], parsed: str, ahead: str):
         assert type(loc) == int
 
         self.loc: int = loc
-        self.expected_chars = expected_chars
-        self.parsed_chars = parsed_chars
-        self.next_char = next_char
+        self.expected: list[str] = expected
+        self.parsed: str = parsed
+        self.ahead: str = ahead
 
     def __str__(self) -> str:
-        return f'Error @ {self.loc}: expected={self.expected_chars}, parsed={self.parsed_chars}, next={self.next_char}'
+        return f'Error @ {self.loc}: expected={self.expected}, parsed={self.parsed}, next={self.ahead}'
 
 
 class Token:
@@ -64,7 +67,7 @@ class Token:
         self.err = err
 
     def __repr__(self) -> str:
-        return f'({";".join(str(t) for t in [self.typ, self.name, self.number, self.err])}:{self.loc})'
+        return f'({self.typ};{self.name};{self.number};{self.err}:{self.loc})'
 
     def __str__(self) -> str:
         if self.typ == Type.number:
@@ -83,32 +86,32 @@ class Scanner:
     """
     Scanner provides the characters in the input stream. The scanner can look at one single character in ahead.
     """
-    def __init__(self, source):
+    def __init__(self, source: str):
         self._src = source
         self._loc: int = -1
 
     def loc(self) -> int:
         return self._loc + 1
 
-    def look_next(self):
+    def look_next(self) -> str:
         if not self.has_next():
             raise Exception("no input")
 
         return self._src[self.loc()]
 
-    def move_next(self):
+    def move_next(self) -> str:
         tok = self.look_next()
         self._loc += 1
         return tok
 
-    def has_next(self):
+    def has_next(self) -> bool:
         return self.loc() < len(self._src)
 
-    def expected_next(self, expected_values):
+    def expected_next(self, expected_values: Iterable[str]) -> bool:
         return self.has_next() and self.look_next() in expected_values
 
 
-def tokenize(scanner: Scanner):
+def tokenize(scanner: Scanner) -> Generator[Token, None, None]:
     """
     It is the generator that creates tokens from the scanner's output
     :param scanner:
@@ -148,7 +151,7 @@ def tokenize(scanner: Scanner):
                         yield Token(
                             loc=scanner.loc(),
                             typ=Type.error,
-                            err=Error(loc=scanner.loc(), expected_chars=['0-9'], parsed_chars=num, next_char=scanner.look_next())
+                            err=Error(loc=scanner.loc(), expected=['0-9'], parsed=num, ahead=scanner.look_next())
                         )
 
                         scanner.move_next()
@@ -156,7 +159,7 @@ def tokenize(scanner: Scanner):
                         yield Token(
                             loc=scanner.loc(),
                             typ=Type.error,
-                            err=Error(loc=scanner.loc(), expected_chars=['0-9'], parsed_chars=num, next_char='')
+                            err=Error(loc=scanner.loc(), expected=['0-9'], parsed=num, ahead='')
                         )
 
                     continue
@@ -167,8 +170,7 @@ def tokenize(scanner: Scanner):
                 yield Token(
                     loc=loc,
                     typ=Type.error,
-                    err=Error(loc=scanner.loc(), expected_chars=['(0-9)+[.(0-9)*][[E|e][+|-](0-9)+]'],
-                              parsed_chars=num, next_char=scanner.look_next())
+                    err=Error(loc=scanner.loc(), expected=['(0-9)+[.(0-9)*][[E|e][+|-](0-9)+]'], parsed=num, ahead=scanner.look_next())
                 )
 
         elif scanner.expected_next(string.ascii_lowercase):
@@ -183,8 +185,7 @@ def tokenize(scanner: Scanner):
             yield Token(
                 loc=loc,
                 typ=Type.error,
-                err=Error(loc=scanner.loc(), expected_chars=['(0-9)|(a-z)|(|)|+|-|*|/|='], parsed_chars='',
-                          next_char=scanner.look_next())
+                err=Error(loc=scanner.loc(), expected=['(0-9)|(a-z)|(|)|+|-|*|/|='], parsed='', ahead=scanner.look_next())
             )
             scanner.move_next()
 
