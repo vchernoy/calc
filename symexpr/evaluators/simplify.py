@@ -101,7 +101,7 @@ def _add_simplify(expr: ast.Add) -> ast.Node:
             pos_degree.setdefault(t.degree(), []).append(t)
 
     return ast.add(
-        operands=list(itertools.chain.from_iterable(l for _, l in sorted(pos_degree.items())))\
+        operands=list(itertools.chain.from_iterable(l for _, l in sorted(pos_degree.items()))) \
                  + [t for t in evaluated if t.degree() < 0],
         coefficient=expr.coefficient,
         variables=expr.vars

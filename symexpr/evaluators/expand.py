@@ -41,15 +41,15 @@ def _add_expand(expr: ast.Add) -> ast.Node:
         return simplify(ast.mul(operands=[term, node]))
 
     term1 = ast.term(coefficient=node.coefficient, variables=node.vars)
-
     terms = [simplify(ast.mul(operands=[term, t, term1])) for t in node.operands]
+
     return simplify(ast.add(terms))
 
 
 @expand.register
 def _mul_expand(expr: ast.Mul) -> ast.Node:
     term = ast.term(coefficient=expr.coefficient, variables=expr.vars)
-    expanded = [term] + [expand(n) for n in expr.operands]
+    expanded: list[ast.Node] = [term] + [expand(n) for n in expr.operands]
 
     res = [ast.number(1)]
     for term in expanded:

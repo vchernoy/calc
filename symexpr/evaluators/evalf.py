@@ -14,7 +14,7 @@ def evalf(expr) -> ast.Node:
 
 
 @evalf.register
-def _one_evalf(expr: ast.One) -> ast.Node:
+def _one_evalf(expr: ast.One) -> ast.One:
     return expr
 
 
@@ -41,46 +41,44 @@ def _mul_evalf(expr: ast.Mul) -> ast.Node:
 @evalf.register
 def _inv_evalf(expr: ast.Inv) -> ast.Node:
     evaluated = [evalf(n) for n in expr.operands]
-    scalars = [n for n in evaluated if n.numeric()]
-    if scalars:
-        if scalars[0].coefficient == 0:
-            return ast.inv(ast.number(0), coefficient=expr.coefficient, variables=expr.vars)
-
-        val = expr.coefficient // scalars[0].coefficient
-        fval = expr.coefficient / scalars[0].coefficient
-        if val != fval:
-            val = fval
-
-        return ast.term(coefficient=val, variables=expr.vars)
-
     non_scalars = [n for n in evaluated if not n.numeric()]
+    if non_scalars:
+        return ast.inv(non_scalars[0], coefficient=expr.coefficient, variables=expr.vars)
 
-    return ast.inv(non_scalars[0], coefficient=expr.coefficient, variables=expr.vars)
+    scalars = [n for n in evaluated if n.numeric()]
+    if scalars[0].coefficient == 0:
+        return ast.inv(ast.number(0), coefficient=expr.coefficient, variables=expr.vars)
+
+    val = expr.coefficient // scalars[0].coefficient
+    fval = expr.coefficient / scalars[0].coefficient
+    if val != fval:
+        val = fval
+
+    return ast.term(coefficient=val, variables=expr.vars)
 
 
 @evalf.register
 def _log_evalf(expr: ast.Log) -> ast.Node:
     evaluated = [evalf(n) for n in expr.operands]
-    scalars = [n for n in evaluated if n.numeric()]
     non_scalars = [n for n in evaluated if not n.numeric()]
-    if scalars:
-        if scalars[0].coefficient > 0:
-            val = expr.coefficient * math.log(scalars[0].coefficient)
+    if non_scalars:
+        return ast.log(non_scalars[0], coefficient=expr.coefficient, variables=expr.vars)
 
-            return ast.term(coefficient=val, variables=expr.vars)
-
+    scalars = [n for n in evaluated if n.numeric()]
+    if scalars[0].coefficient == 0:
         return ast.log(scalars[0], coefficient=expr.coefficient, variables=expr.vars)
 
-    return ast.log(non_scalars[0], coefficient=expr.coefficient, variables=expr.vars)
+    return ast.term(coefficient=expr.coefficient * math.log(scalars[0].coefficient), variables=expr.vars)
 
 
-@evalf.register(ast.Exp)
-def _exp_evalf(expr) -> ast.Node:
+@evalf.register
+def _exp_evalf(expr: ast.Exp) -> ast.Node:
     evaluated = [evalf(n) for n in expr.operands]
-    scalars = [n for n in evaluated if n.numeric()]
     non_scalars = [n for n in evaluated if not n.numeric()]
-    if scalars:
-        val = expr.coefficient * math.exp(scalars[0].coefficient)
-        return ast.term(coefficient=val, variables=expr.vars)
+    if non_scalars:
+        return ast.log(non_scalars[0], coefficient=expr.coefficient, variables=expr.vars)
 
-    return ast.log(non_scalars[0], coefficient=expr.coefficient, variables=expr.vars)
+    scalars = [n for n in evaluated if n.numeric()]
+
+    return ast.term(coefficient=expr.coefficient * math.exp(scalars[0].coefficient), variables=expr.vars)
+

@@ -209,15 +209,14 @@ Let's first define num and id lexemes:
 * SP := id | F | PE
 * PE := `(` E `)`
 * F := `log` SP
+* F := `exp` SP
 
 Examples:
 
 The grammar recognises the following expressions: 
 
 * `2y`, `2(1+3x)`, `2x*y`, `y*(1+z*5)`,
-
-* `2 log 5`, `log x`, `log log 2x`, `log(2x + 1)`. 
-
+* `2 log 5`, `log x`, `log log 2x`, `log(2x + 1)`.
 * Note that `log 2 * x` is recognized to `(log 2) * x`.
 
 It is easy to represent the grammar as LL(1), 
@@ -240,9 +239,9 @@ The typical definition of AST consists of the following types of nodes:
 * `Const` for scalar, 
 * `Var` for representing a single variable, 
 * `Log` for logarithm.
+* `Exp` for exponent.
 
-As example, the following expression: 
-`2x*x*(x+1-y)` will be represented as
+As example, the following expression: `2x*x*(x+1-y)` will be represented as
 
 * `Mul(Const(2), Mul(Mul(Var(x), Var(x)), Add(Var(x), Add(Const(1), Sub(Var(y))))))`
 
@@ -252,9 +251,9 @@ As result, I designed different AST that has fewer types of nodes,
 but each node is more powerful: `Add`, `Mul`, `Inv`, `One`, `Log`. 
 
 Each node contains a scalar and a group of variables (with their exponents) 
-that forms terms. `Mul` and `Add` also contain a list of children 
-the appropriate operation applies to, while `Inv` (inversion or 1/...) 
-and `Log` has only one child. 
+that forms terms. 
+`Mul` and `Add` also contain a list of children that the operation applies to,
+while `Inv` (inversion or 1/...), `Log`, and `Exp` has only one child. 
 The type `One` node is the simplest one, it has no children.
 
 Then basically `5x*x*y` could be represented by one node: 

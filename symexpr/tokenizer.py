@@ -1,5 +1,6 @@
 import enum
 import string
+import symexpr.ast as ast
 
 
 class Type(enum.Enum):
@@ -21,7 +22,7 @@ class Type(enum.Enum):
     eol = 'EOL'
 
 
-simple_tokens = {t.value: t for t in [
+simple_tokens: dict[str, Type] = {t.value: t for t in [
     Type.l_paren,
     Type.r_paren,
     Type.add,
@@ -33,7 +34,7 @@ simple_tokens = {t.value: t for t in [
 
 
 class Error:
-    def __init__(self, loc: int, expected_chars, parsed_chars, next_char):
+    def __init__(self, loc: int, expected_chars: list[str], parsed_chars, next_char):
         assert type(loc) == int
 
         self.loc: int = loc
@@ -52,14 +53,14 @@ class Token:
     If typ is Type.number, the token contains number (integer of float)
     If type is Type.error, the token contains err representing the Lexer error.
     """
-    def __init__(self, loc: int, typ: Type, name=None, num=None, err=None):
+    def __init__(self, loc: int, typ: Type, name: str = None, num: ast.Num = None, err: Error = None):
         assert type(typ) == Type
         assert type(loc) == int
 
         self.loc: int = loc
         self.typ: Type = typ
-        self.name = name
-        self.number = num
+        self.name: str = name
+        self.number: ast.Num = num
         self.err = err
 
     def __repr__(self) -> str:
@@ -78,7 +79,36 @@ class Token:
         return str(self.typ)
 
 
-def tokenize(scanner: 'Scanner'):
+class Scanner:
+    """
+    Scanner provides the characters in the input stream. The scanner can look at one single character in ahead.
+    """
+    def __init__(self, source):
+        self._src = source
+        self._loc: int = -1
+
+    def loc(self) -> int:
+        return self._loc + 1
+
+    def look_next(self):
+        if not self.has_next():
+            raise Exception("no input")
+
+        return self._src[self.loc()]
+
+    def move_next(self):
+        tok = self.look_next()
+        self._loc += 1
+        return tok
+
+    def has_next(self):
+        return self.loc() < len(self._src)
+
+    def expected_next(self, expected_values):
+        return self.has_next() and self.look_next() in expected_values
+
+
+def tokenize(scanner: Scanner):
     """
     It is the generator that creates tokens from the scanner's output
     :param scanner:
@@ -118,8 +148,7 @@ def tokenize(scanner: 'Scanner'):
                         yield Token(
                             loc=scanner.loc(),
                             typ=Type.error,
-                            err=Error(loc=scanner.loc(), expected_chars=['0-9'], parsed_chars=num,
-                                      next_char=scanner.look_next())
+                            err=Error(loc=scanner.loc(), expected_chars=['0-9'], parsed_chars=num, next_char=scanner.look_next())
                         )
 
                         scanner.move_next()
@@ -154,39 +183,9 @@ def tokenize(scanner: 'Scanner'):
             yield Token(
                 loc=loc,
                 typ=Type.error,
-                err=Error(loc=scanner.loc(), expected_chars='(0-9)|(a-z)|(|)|+|-|*|/|=', parsed_chars='',
+                err=Error(loc=scanner.loc(), expected_chars=['(0-9)|(a-z)|(|)|+|-|*|/|='], parsed_chars='',
                           next_char=scanner.look_next())
             )
             scanner.move_next()
 
     yield Token(scanner.loc(), Type.eol)
-
-
-class Scanner:
-    """
-    Scanner provides the characters in the input stream. The scanner can look at one single character in ahead.
-    """
-    def __init__(self, source):
-        self._src = source
-        self._loc: int = -1
-
-    def loc(self) -> int:
-        return self._loc + 1
-
-    def look_next(self):
-        if not self.has_next():
-            raise Exception("no input")
-
-        return self._src[self.loc()]
-
-    def move_next(self):
-        tok = self.look_next()
-        self._loc += 1
-        return tok
-
-    def has_next(self):
-        return self.loc() < len(self._src)
-
-    def expected_next(self, expected_values):
-        return self.has_next() and (self.look_next() in expected_values)
-

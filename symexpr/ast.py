@@ -22,7 +22,7 @@ class OpKind(enum.Enum):
     exp = 6
 
 
-Num: typing.TypeAlias = int | float
+Num: typing.TypeAlias = float
 VarTerm: typing.TypeAlias = dict[str, int]
 Vars: typing.TypeAlias = set[str]
 Nodes: typing.TypeAlias = list['Node']
@@ -416,7 +416,7 @@ def incby(acc_vars: VarTerm, added_vars: VarTerm) -> None:
         return
 
     for v, p in added_vars.items():
-        acc_vars[v] = acc_vars.setdefault(v, 0) + p
+        acc_vars[v] = acc_vars.get(v, 0) + p
         if acc_vars[v] == 0:
             del acc_vars[v]
 
