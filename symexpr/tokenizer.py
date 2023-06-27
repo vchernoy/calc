@@ -21,6 +21,7 @@ class Type(enum.Enum):
     mul = '*'
     div = '/'
     equal = '='
+    comma = ','
     error = 'err'
     eol = 'EOL'
 
@@ -33,6 +34,7 @@ simple_tokens: dict[str, Type] = {t.value: t for t in [
     Type.mul,
     Type.div,
     Type.equal,
+    Type.comma,
 ]}
 
 

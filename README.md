@@ -254,13 +254,15 @@ Let's first define num and id lexemes:
 * P := num ((`*`|`/`) P)*
 * P := num (id | F | PE) ((`*`|`/`) P)*
 * P := (id | F | PE) ((`*`|`/`) P)*
-* SP := num [id | F]
-* SP := id | F | PE
-* PE := `(` E `)`
 * F := `log` SP
 * F := `exp` SP
 * F := `expand` SP
 * F := `evalf` SP
+* F := `diff` DA
+* SP := num [id | F]
+* SP := id | F | PE
+* PE := `(` E `)`
+* DA := `(` E `,` id `)`
 
 Examples:
 

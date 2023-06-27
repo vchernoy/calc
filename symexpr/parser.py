@@ -240,6 +240,34 @@ def parse_short_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
     return ast.mul(operands)
 
 
+def parse_diff_args(reader: TokenReader, errors: Errors) -> list[ast.Node]|None:
+    """
+    Recognizes the rules:
+    DA := `(` E `,` id `)`
+    :param reader:
+    :param errors:
+    :return: AST
+    """
+    if not find_expected(reader, expr_paren_starts, errors):
+        return None
+
+    reader.move_next()
+    expr = parse_expr(reader, errors)
+    if not find_expected(reader, {tokenizer.Type.comma}, errors):
+        return None
+
+    reader.move_next()
+    if not find_expected(reader, {tokenizer.Type.id}, errors):
+        return None
+
+    name = reader.move_next().name
+    var = ast.variable(name)
+    if find_expected(reader, {tokenizer.Type.r_paren}, errors):
+        reader.move_next()
+
+    return [expr, var]
+
+
 def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node|None:
     """
     Recognizes the rules:
@@ -264,6 +292,8 @@ def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node|None:
         tree = ast.evalf(parse_short_product(reader, errors))
     elif name == 'expand':
         tree = ast.expand(parse_short_product(reader, errors))
+    elif name == 'diff':
+        tree = ast.diff(parse_diff_args(reader, errors))
     else:
         tree = ast.variable(name)
 

@@ -240,6 +240,26 @@ class Expand(Node):
         return self.operands[0].numeric()
 
 
+class Diff(Node):
+    """
+    Represents coeff * {x^k for x,k in vars} * exp operands[0].
+    For examples:
+      2x*x*y * exp expr could be represented by one Exp-node
+    """
+    def __init__(self, coeff: Num = 1, variables: VarTerm = None, args: Nodes = None):
+        super().__init__(OpKind.diff, coeff, variables, args)
+        assert len(self.operands) == 2
+
+    def degree(self, var: str = None) -> int:
+        return _degree(self, var)
+
+    def numeric(self) -> bool:
+        return False
+
+    def is_term(self) -> bool:
+        return self.operands[0].numeric()
+
+
 def new(operation: OpKind, coeff: Num = 1, variables: VarTerm = None, operands: Nodes = None) -> Node:
     """
     Factory methods to create nodes of different types.
@@ -371,6 +391,11 @@ def evalf(expr: Node, variables: VarTerm = None, coeff: Num = 1) -> One | Exp:
 
 def expand(expr: Node, variables: VarTerm = None, coeff: Num = 1) -> One | Exp:
     return Expand(operands=[expr], variables=variables, coeff=coeff) if expr \
+        else term(coeff=coeff, variables=variables)
+
+
+def diff(args: Nodes, variables: VarTerm = None, coeff: Num = 1) -> One | Exp:
+    return Diff(args=args, variables=variables, coeff=coeff) if args \
         else term(coeff=coeff, variables=variables)
 
 
