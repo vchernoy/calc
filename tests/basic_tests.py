@@ -138,3 +138,4 @@ class TestCalc(unittest.TestCase):
 def parse(inp):
     errors = []
     return parser.parse(parser.TokenReader(list(tokenizer.tokenize(tokenizer.Scanner(inp)))), errors), errors
+
