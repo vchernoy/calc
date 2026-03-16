@@ -8,9 +8,10 @@ import symexpr.evaluators as evaluators
 
 """
 The interactive symbolic calculator.
-Run it as
-python3 calc.py
-It will prompt for input string (expression)
+Run it as:
+  python calc.py
+  python3 calc.py
+It will prompt for input string (expression).
 """
 
 
@@ -70,10 +71,10 @@ def check_solution(simplified: ast.Node, var: str, solution: ast.Node):
         elif final_subs.numeric() and abs(final_subs.coeff) < 1e-10:
             print('correct, close to 0 is expected')
         else:
-            print('ups... something wrong happened, test it more!')
+            print('oops... something wrong happened, test it more!')
 
     else:
-        print('ups... something wrong happened, test it more!')
+        print('oops... something wrong happened, test it more!')
 
 
 def main():

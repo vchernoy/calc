@@ -9,11 +9,11 @@ from symexpr import evaluators
 @functools.singledispatch
 def evalf(_) -> ast.Node:
     """
-    Computes the expression in floating points, but does not change any variables.s
+    Computes the expression in floating points, but does not change any variables.
     :param _: AST
     :return: AST
     """
-    raise TypeError('cannot evalf {expr}')
+    raise TypeError(f'cannot evalf {_}')
 
 
 @evalf.register

@@ -131,6 +131,18 @@ class TestCalc(unittest.TestCase):
             result = str(evaluators.simplify(expr))
             self.assertEqual(result, expected, f'diff: {inp} => {result}, expected {expected}')
 
+    def test_subse(self):
+        """Test AST substitution (subse) with expression values."""
+        expr, errors = parse('2*x+1')
+        self.assertEqual(errors, [])
+        # subse('2x+1', x=3y+1) => 2*(3y+1)+1
+        subbed = evaluators.subse(expr, {'x': parse('3*y+1')[0]})
+        simplified = str(evaluators.simplify(subbed))
+        self.assertIn('y', simplified)
+        # Verify numerically: subse then subs y=0 => 2*1+1 = 3
+        with_y0 = evaluators.subs(subbed, {'y': 0})
+        self.assertEqual(float(str(evaluators.simplify(with_y0))), 3.0)
+
     def test_symbolic(self):
         for n in 1, 10, 20, 100, 101:
             inp = ' * '.join(['(a+b) * (a-b)'] * n)

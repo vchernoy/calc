@@ -55,13 +55,13 @@ class Node:
             raise ValueError(f'operands must be list, got {type(self.operands)}')
 
     def degree(self, var: str = None) -> int:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def numeric(self) -> bool:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def is_term(self) -> bool:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def footprint(self) -> str:
         return ','.join(f'{v}^{p}' for v, p in sorted(self.vars.items()))

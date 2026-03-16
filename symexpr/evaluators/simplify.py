@@ -155,7 +155,8 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
 
     evaluated2 = []
     for n in evaluated1:
-        assert n.operation != ast.OpKind.mul
+        if n.operation == ast.OpKind.mul:
+            raise ValueError('Mul nodes should be flattened in evaluated1')
 
         res_vars.update(n.vars)
         res_coeff *= n.coeff
@@ -166,9 +167,10 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
     evaluated3 = [n for n in evaluated2 if n.operation != ast.OpKind.inv]
     inv_coeff = 1
     for n in evaluated2:
-        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf]
-        assert n.coeff == 1
-        assert not n.vars
+        if n.operation not in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf]:
+            raise ValueError(f'unexpected operation in _mul_simplify: {n.operation}')
+        if n.coeff != 1 or n.vars:
+            raise ValueError('expected coeff=1 and no vars in _mul_simplify')
 
         if n.operation == ast.OpKind.inv:
             t = n.operands[0]
@@ -179,9 +181,10 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
 
     evaluated = []
     for n in evaluated3:
-        assert n.operation in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf]
-        assert n.coeff == 1
-        assert not n.vars
+        if n.operation not in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf]:
+            raise ValueError(f'unexpected operation in _mul_simplify: {n.operation}')
+        if n.coeff != 1 or n.vars:
+            raise ValueError('expected coeff=1 and no vars in _mul_simplify')
 
         evaluated.append(n)
 

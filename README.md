@@ -8,7 +8,7 @@ In order to run it, invoke:
 python calc.py
 ```
 
-To run unit test, invoke:
+To run unit tests, invoke:
 
 ```sh
 python -m unittest tests.basic_tests
@@ -16,11 +16,15 @@ python -m unittest tests.basic_tests
 
 ### Libraries Used
 
+* `collections`
 * `enum`
 * `functools`
+* `itertools`
 * `math`
+* `operator`
 * `random`
 * `string`
+* `typing`
 
 ### File Organization
 
@@ -35,7 +39,7 @@ python -m unittest tests.basic_tests
 
 Such structure has better decoupling of modules, so for example, 
 ast-module could be used with other algorithms, 
-or we can use different the lexer (front-end parser), 
+or we can use a different lexer (front-end parser), 
 or we can develop new algorithm for evaluating/simplifying the AST.
 
 ### Example of Running
@@ -46,33 +50,35 @@ in order to focus on most important information.
 
 ```
 input > 2 + 3
-simplified: 5
+parsed expression: 2+3
+simplified expression: 5
 ```
 
 ```
 input > (2 + 1/5) * (2 - 1/5) + 1/25
-simplified: 4.0
+simplified expression: 4.0
 ```
 
 ```
 input > 2+3x=x*(5-2)
-simplified: 2
+simplified expression: 2
 ```
 
 ```
 input > 2+3x - x*(5-2)
-simplified: 2
+simplified expression: 2
 ```
 
 The calculator can simplify arithmetic expressions, 
 as well as ones containing free variables. 
 The parser replaces an expression in the form A = B to the equivalent form of A - B, 
 and then calculator invokes different simplification algorithms.
-It has 3 main ways that it tries to apply each of them one by one:
+It has several transformation functions that it tries to apply:
 
 - `simplify()` -- simplifies products and sums without expanding parentheses. 
 - `expand()` -- opens parentheses and transforms `a(b+c)` to `ab + ac`.
-- `evalf()` -- compute any numerical expressions approximately.
+- `evalf()` -- computes numerical expressions approximately.
+- `diff()` -- symbolic differentiation (e.g. `diff(x*x, x)` → `2x`).
 
 If a function cannot apply some transformation, 
 it leaves the expression as is, so it allows, 
@@ -81,31 +87,31 @@ which then could be simplified by other functions to the desired `'3.5x'`.
 
 ```
 input > (0.5+2)*x+x
-simplified: 3.5x
-solution x = 0
+simplified expression: 3.5x
+solution: x = 0
 ```
 
 ```
 input > 2(1+2x)=x*(5-2)
-simplified: 2+x
-solution: x=-2
+simplified expression: 2+x
+solution: x = -2
 ```
 
 ```
 input > (4x + 2) / 2 = x
-simplified: 1+x
+simplified expression: 1+x
 solution: x = -1
 ```
 
 ```
 input > (5x + 2) / 2 = x
-simplified: 1+(1.5x)
+simplified expression: 1+(1.5x)
 solution: x = -0.666666666667
 ```
 
 ```
 input > (5x*x + 2x) / x = x + log 5
-simplified: 2+(-log 5)+(4x)
+simplified expression: 2+(-log 5)+(4x)
 solution: x = ((-2)+(log 5))*(1/4)
 approximate solution: x = -0.09764052189147493
 ```
@@ -118,15 +124,15 @@ The solver-algorithm is looking for well-known patterns of linear equation and t
 
 ```
 input > (x-1)*(x+1) = 1
-simplified: (-2)+x*x
+simplified expression: (-2)+x*x
 solution: x*x = 2
 ```
 
 ```
 input > x* log 5 = 3*log5 +10/log 3
-simplified: (-3log 5)+(-10/(log 3))+(x*log 5)
+simplified expression: (-3log 5)+(-10/(log 3))+(x*log 5)
 solution: x = 8.655634303097777
-substitutes the solution: 1.7763568394002505e-15
+substitutes the solution to the original expression: 1.7763568394002505e-15
 ```
 
 Whenever possible it tries to solve very primitive non-linear equations 
@@ -139,12 +145,12 @@ the original expression and then simplifying it in order to get 0
 
 ```
 input > x*x*x*z + 5y*x - 2 - x * (b*b+5a) - ((-2)+(5*x*y)+((-5)*a*x)+(-(b*x*b))+(x*z*x*x))
-simplified: 0
+simplified expression: 0
 ```
 
 ```
 input > 2x*y + y = 4
-simplified: (-4)+y+(2x*y)
+simplified expression: (-4)+y+(2x*y)
 solution: x = (-1/2)+(4/(2y))
 approximate solution: x = (-0.5)+(4/(2y))
 substitutes the solution to the original expression: 0
@@ -152,7 +158,7 @@ substitutes the solution to the original expression: 0
 
 ```
 input > 2(a*x-5/z)=4/z
-simplified: (2a*x)+(-10/z)+(-4/z)
+simplified expression: (2a*x)+(-10/z)+(-4/z)
 solution: x = (10/(2a*z))+(4/(2a*z))
 substitutes the solution to the original expression: (20/(2z))+(8/(2z))+(-10/z)+(-4/z)
 there are still free variables {'z'}
@@ -213,22 +219,23 @@ The calculator supports symbolic differentiation via `diff(expr, var)`:
 
 ```
 input > diff(x*x, x)
-simplified: 2x
+parsed expression: diff((x*x), x)
+simplified expression: 2x
 ```
 
 ```
 input > diff(x*x+3*x, x)
-simplified: 3+(2x)
+simplified expression: 3+(2x)
 ```
 
 ```
 input > diff(log x, x)
-simplified: 1/x
+simplified expression: 1/x
 ```
 
 ```
 input > diff(exp x, x)
-simplified: exp x
+simplified expression: exp x
 ```
 
 It also can handle expressions (and equations) of multiple free variable.
@@ -244,12 +251,12 @@ input 1 > 2 + x * / 3
 2 + x * / 3
         ^   
 error @ 8: unexpected token: /, expected tokens: '(',id,num
-simplified: 2+(3x)
+simplified expression: 2+(3x)
 ```
 
 ```
 input > 2x*x = 4x
-simplified: (-4x)+(2x*x)
+simplified expression: (-4x)+(2x*x)
 cannot solve the equation over x
 ```
 
@@ -325,12 +332,14 @@ As example, the following expression: `2x*x*(x+1-y)` will be represented as
 While such AST is very easy to construct, 
 it is not very friendly for manipulations and simplifications. 
 As result, I designed different AST that has fewer types of nodes, 
-but each node is more powerful: `Add`, `Mul`, `Inv`, `One`, `Log`. 
+but each node is more powerful: `Add`, `Mul`, `Inv`, `One`, `Log`, `Exp`, 
+`Evalf`, `Expand`, `Diff`. 
 
 Each node contains a scalar and a group of variables (with their exponents) 
 that forms terms. 
 `Mul` and `Add` also contain a list of children that the operation applies to,
-while `Inv` (inversion or 1/...), `Log`, and `Exp` has only one child. 
+while `Inv` (inversion or 1/...), `Log`, `Exp`, `Evalf`, and `Expand` have only one child.
+`Diff` has two children (expression and variable). 
 The type `One` node is the simplest one, it has no children.
 
 Then basically `5x*x*y` could be represented by one node: 
