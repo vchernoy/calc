@@ -69,6 +69,7 @@ class Token:
         self,
         loc: int,
         typ: Type,
+        *,
         name: str | None = None,
         num: ast.Num | None = None,
         err: Error | None = None,
@@ -194,7 +195,9 @@ def tokenize(scanner: Scanner) -> Generator[Token, None, None]:
                     continue
 
             try:
-                yield Token(loc, Type.number, num=int(num) if is_int else float(num))
+                yield Token(
+                    loc, Type.number, num=int(num) if is_int else float(num)
+                )
             except ValueError:
                 yield Token(
                     loc=loc,
@@ -212,7 +215,7 @@ def tokenize(scanner: Scanner) -> Generator[Token, None, None]:
             while scanner.expected_next(string.ascii_lowercase):
                 lit += scanner.move_next()
 
-            yield Token(loc, Type.id, lit)
+            yield Token(loc, Type.id, name=lit)
         elif scanner.expected_next(" \t"):
             scanner.move_next()
         else:
