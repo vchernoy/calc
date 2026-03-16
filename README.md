@@ -1,7 +1,7 @@
 
 # Interactive Calculator
 
-The tool is implemented in Python 3, and it uses only the standard library.
+The tool is implemented in Python 3 (3.9+), and it uses only the standard library.
 In order to run it, invoke:
 
 ```sh
@@ -12,6 +12,20 @@ To run unit tests, invoke:
 
 ```sh
 python -m unittest tests.basic_tests
+```
+
+### Docker
+
+```sh
+docker build -t symcalc .
+docker run -it symcalc
+```
+
+### Installation
+
+```sh
+pip install .
+# or for development: pip install -e .
 ```
 
 ### Libraries Used
