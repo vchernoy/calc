@@ -2,10 +2,11 @@
 Immutable AST for arithmetic and symbolic expressions.
 """
 
+from __future__ import annotations
+
 import collections
 import enum
 import math
-import typing
 
 
 class OpKind(enum.Enum):
@@ -26,10 +27,10 @@ class OpKind(enum.Enum):
     diff = 9
 
 
-Num: typing.TypeAlias = float
-VarTerm: typing.TypeAlias = collections.Counter[str]
-Vars: typing.TypeAlias = set[str]
-Nodes: typing.TypeAlias = list["Node"]
+Num = float
+VarTerm = collections.Counter[str]
+Vars = set[str]
+Nodes = list["Node"]
 
 
 class Node:
