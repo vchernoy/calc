@@ -17,7 +17,7 @@ class TestCalc(unittest.TestCase):
     )
 
     def _test_int(self, inp: str, expected: int | None = None):
-        expected = str(int(inp)) if expected is None else expected
+        expected = int(inp) if expected is None else expected
         expr, errors = parse(inp)
         self.assertEqual(errors, [])
         self.assertEqual(int(str(evaluators.simplify(expr))), expected)
@@ -116,6 +116,20 @@ class TestCalc(unittest.TestCase):
             expr2 = evaluators.expand(expr)
             val2 = float(str(evaluators.evalf(expr2)))
             self.assertAlmostEqual(val2, 1, delta=0.)
+
+    def test_diff(self):
+        cases = [
+            ('diff(x*x, x)', '2x'),
+            ('diff(x*x+3*x, x)', '3+(2x)'),
+            ('diff(log x, x)', '1/x'),
+            ('diff(exp x, x)', 'exp x'),
+            ('diff(x*x*x, x)', '3x*x'),
+        ]
+        for inp, expected in cases:
+            expr, errors = parse(inp)
+            self.assertEqual(errors, [], f'Parse errors for {inp}: {errors}')
+            result = str(evaluators.simplify(expr))
+            self.assertEqual(result, expected, f'diff: {inp} => {result}, expected {expected}')
 
     def test_symbolic(self):
         for n in 1, 10, 20, 100, 101:

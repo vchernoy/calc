@@ -86,6 +86,17 @@ def _exp_evalf(expr: ast.Exp) -> ast.Node:
     return ast.term(coeff=expr.coeff * math.exp(scalars[0].coeff), variables=expr.vars)
 
 
+@evalf.register(ast.Diff)
+def _diff_evalf(expr: ast.Diff) -> ast.Node:
+    from symexpr.evaluators.diff import _var_from_node
+    var_node = expr.operands[1]
+    var = _var_from_node(var_node)
+    if var is None:
+        return expr
+    result = evaluators.diff(expr.operands[0], var)
+    return evaluators.evalf(evaluators.simplify(result))
+
+
 @evalf.register(ast.Evalf)
 @evalf.register(ast.Expand)
 def _evalf(expr) -> ast.Node:

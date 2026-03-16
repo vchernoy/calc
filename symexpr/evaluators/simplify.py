@@ -11,11 +11,11 @@ from symexpr import evaluators
 def simplify(expr) -> ast.Node:
     """
     simplifies the given AST, performs basic transformation, does not open parentheses in a(b+c),
-    but can evaluators a + b + c or a * b * c
+    but can simplify a + b + c or a * b * c
     :param expr: AST
     :return: AST
     """
-    raise TypeError(f'cannot evaluators" {expr}')
+    raise TypeError(f'cannot simplify {expr}')
 
 
 @simplify.register
@@ -74,6 +74,17 @@ def _log_simplify(expr: ast.Log) -> ast.Node:
         operands=[evaluated],
         coeff=expr.coeff
     )
+
+
+@simplify.register(ast.Diff)
+def _diff_simplify(expr: ast.Diff) -> ast.Node:
+    from symexpr.evaluators.diff import _var_from_node
+    var_node = expr.operands[1]
+    var = _var_from_node(var_node)
+    if var is None:
+        return expr
+    result = evaluators.diff(expr.operands[0], var)
+    return evaluators.simplify(result)
 
 
 @simplify.register(ast.Evalf)

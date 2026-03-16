@@ -73,7 +73,7 @@ all_tokens: set[tokenizer.Type] = {
     tokenizer.Type.number, tokenizer.Type.id,
     tokenizer.Type.add, tokenizer.Type.sub,
     tokenizer.Type.mul, tokenizer.Type.div,
-    tokenizer.Type.equal
+    tokenizer.Type.equal, tokenizer.Type.comma
 }
 
 
@@ -171,7 +171,7 @@ def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
         elif prev_tok.typ == tokenizer.Type.l_paren:
             tree = parse_expr_in_parenthesis(reader, errors)
         else:
-            assert False
+            raise ValueError(f'unexpected token in parse_product: {prev_tok.typ}')
 
         if operation == ast.OpKind.mul:
             operands.append(tree)

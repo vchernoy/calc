@@ -2,6 +2,7 @@ import collections
 import math
 import itertools
 import symexpr.ast as ast
+from symexpr import evaluators
 
 
 def subs(expr: ast.Node, assignment: dict[str, ast.Num]) -> ast.Node:
@@ -12,6 +13,11 @@ def subs(expr: ast.Node, assignment: dict[str, ast.Num]) -> ast.Node:
     :param assignment: a mapping between free variables and their numerical values
     :return: AST
     """
+    if expr.operation == ast.OpKind.diff:
+        # Simplify Diff first, then substitute
+        simplified = evaluators.simplify(expr)
+        return subs(simplified, assignment)
+
     return ast.new(
         operation=expr.operation,
         operands=[subs(n, assignment) for n in expr.operands],
@@ -31,6 +37,11 @@ def subse(expr: ast.Node, assignment: dict[str, ast.Node]) -> ast.Node:
     :param assignment: a mapping between free variables and their AST values
     :return: AST
     """
+    if expr.operation == ast.OpKind.diff:
+        # Simplify Diff first, then substitute
+        simplified = evaluators.simplify(expr)
+        return subse(simplified, assignment)
+
     return ast.mul(
         list(itertools.chain.from_iterable([assignment[v]] * p for v, p in expr.vars.items() if v in assignment)) +
         [

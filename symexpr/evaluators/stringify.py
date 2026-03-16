@@ -85,6 +85,22 @@ def _one_stringify(self: ast.One, in_parenthesis: bool = False) -> str:
     return f'({res})' if around_parenthesis else res
 
 
+@stringify.register(ast.Diff)
+def _diff_stringify(self: ast.Diff, in_parenthesis: bool = False) -> str:
+    res = ''
+    if self.coeff == -1:
+        res = '-'
+    elif self.coeff != 1:
+        res = str(self.coeff)
+
+    if self.vars:
+        res += _vars_to_str(self) + '*'
+
+    res += 'diff(' + stringify(self.operands[0], True) + ', ' + stringify(self.operands[1], True) + ')'
+
+    return f'({res})' if in_parenthesis else res
+
+
 @stringify.register(ast.Exp)
 @stringify.register(ast.Log)
 @stringify.register(ast.Evalf)

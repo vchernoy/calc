@@ -9,7 +9,8 @@ long_description = (this_directory / "README.md").read_text()
 setup(
     name='symcalc',
     version='0.1.0',
-    packages=find_packages(include=['calc.py', 'symexpr/*', 'symexpr/evaluators/*']),
+    packages=find_packages(include=['symexpr', 'symexpr.*']),
+    scripts=['calc.py'],
     long_description=long_description,
     long_description_content_type='text/markdown',
 )

@@ -29,7 +29,7 @@ python -m unittest tests.basic_tests
   -   `ast.py`  -- defines the Abstract Syntax Tree, which may represent symbolic arithmetic expression.
   -   `tokenizer.py` -- the parser's front-end, it processes the input and generates a stream of tokens, like num, id, left paren, add, etc... 
   -   `parser.py` -- parsers the stream of tokens and generates the AST.
-  -   `evaluator.py` -- a group of tools to manipulate with AST, for example, functions that simplify or expand the AST (expression).
+  -   `evaluators/` -- a group of tools to manipulate the AST, for example, functions that simplify, expand, or differentiate expressions.
 * `tests/`
   -   `basic_tests.py` -- simple `unit/integration-tests`
 
@@ -82,7 +82,7 @@ which then could be simplified by other functions to the desired `'3.5x'`.
 ```
 input > (0.5+2)*x+x
 simplified: 3.5x
-soution x = 0
+solution x = 0
 ```
 
 ```
@@ -114,7 +114,7 @@ Here, we could see that when `calc.py` finds a variable in the simplified expres
 it considers it as an equation that should be solved.
 
 It does support division and logarithm in this mode, while its capabilities are very limited.
-The solver-algorithm is looking for well-known patterns of linear equation and trys to solve it.
+The solver-algorithm is looking for well-known patterns of linear equation and tries to solve it.
 
 ```
 input > (x-1)*(x+1) = 1
@@ -129,7 +129,7 @@ solution: x = 8.655634303097777
 substitutes the solution: 1.7763568394002505e-15
 ```
 
-Whenever possible it tries to solve very primitive none-linear equations 
+Whenever possible it tries to solve very primitive non-linear equations 
 (while without full support of power it is impossible 
 to present the solution in the form of x=value). 
 
@@ -209,6 +209,28 @@ parsed expression: evalf (exp (expand (((3+a)*(a+1))+(-a*3)+(-a*a)+(-a))))
 simplified expression: 20.085536923187668
 ```
 
+The calculator supports symbolic differentiation via `diff(expr, var)`:
+
+```
+input > diff(x*x, x)
+simplified: 2x
+```
+
+```
+input > diff(x*x+3*x, x)
+simplified: 3+(2x)
+```
+
+```
+input > diff(log x, x)
+simplified: 1/x
+```
+
+```
+input > diff(exp x, x)
+simplified: exp x
+```
+
 It also can handle expressions (and equations) of multiple free variable.
 It runs the same algorithms to simplify/expand/evaluate and then, 
 if the expression still has variables, 
@@ -284,6 +306,8 @@ Our `Recursive Descent Parser` consists of a group of functions:
 * `parse_product()` -- recognizes `P`
 * `parse_short_product()` -- recognizes `SP`
 * `parse_expr_in_parenthesis()` -- recognizes `PE`
+* `parse_var_or_func()` -- recognizes identifiers and function calls (`log`, `exp`, `expand`, `evalf`, `diff`)
+* `parse_diff_args()` -- recognizes `DA` for `diff(expr, var)`
 
 ## The AST
 

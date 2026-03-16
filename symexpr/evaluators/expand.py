@@ -33,6 +33,17 @@ def _expand(expr) -> ast.Node:
     )
 
 
+@expand.register(ast.Diff)
+def _diff_expand(expr: ast.Diff) -> ast.Node:
+    from symexpr.evaluators.diff import _var_from_node
+    var_node = expr.operands[1]
+    var = _var_from_node(var_node)
+    if var is None:
+        return expr
+    result = evaluators.diff(expr.operands[0], var)
+    return evaluators.expand(result)
+
+
 @expand.register(ast.Evalf)
 @expand.register(ast.Expand)
 def _expand(expr) -> ast.Node:

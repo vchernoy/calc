@@ -40,7 +40,8 @@ simple_tokens: dict[str, Type] = {t.value: t for t in [
 
 class Error:
     def __init__(self, loc: int, expected: list[str], parsed: str, ahead: str):
-        assert type(loc) == int
+        if not isinstance(loc, int):
+            raise ValueError(f'loc must be int, got {type(loc)}')
 
         self.loc: int = loc
         self.expected: list[str] = expected
@@ -59,8 +60,10 @@ class Token:
     If type is Type.error, the token contains err representing the Lexer error.
     """
     def __init__(self, loc: int, typ: Type, name: str = None, num: ast.Num = None, err: Error = None):
-        assert type(typ) == Type
-        assert type(loc) == int
+        if not isinstance(typ, Type):
+            raise ValueError(f'typ must be Type, got {type(typ)}')
+        if not isinstance(loc, int):
+            raise ValueError(f'loc must be int, got {type(loc)}')
 
         self.loc: int = loc
         self.typ: Type = typ
