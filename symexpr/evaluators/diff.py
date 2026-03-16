@@ -23,7 +23,7 @@ def diff(expr: ast.Node, var: str) -> ast.Node:
     :param var: variable to differentiate with respect to
     :return: derivative as AST
     """
-    raise TypeError(f'cannot diff {expr} with respect to {var}')
+    raise TypeError(f"cannot diff {expr} with respect to {var}")
 
 
 @diff.register
@@ -38,7 +38,10 @@ def _one_diff(expr: ast.One, var: str) -> ast.Node:
     else:
         vars_copy[var] = p - 1
 
-    return ast.term(coeff=expr.coeff * p, variables=vars_copy if vars_copy else collections.Counter())
+    return ast.term(
+        coeff=expr.coeff * p,
+        variables=vars_copy if vars_copy else collections.Counter(),
+    )
 
 
 @diff.register
@@ -75,11 +78,10 @@ def _inv_diff(expr: ast.Inv, var: str) -> ast.Node:
     da = evaluators.diff(a, var)
     neg_da = ast.neg(da)
     if neg_da is None:
-        raise ValueError('neg(da) returned None')
-    return ast.mul([
-        neg_da,
-        ast.inv(ast.mul([a, a]))
-    ], coeff=expr.coeff, variables=expr.vars)
+        raise ValueError("neg(da) returned None")
+    return ast.mul(
+        [neg_da, ast.inv(ast.mul([a, a]))], coeff=expr.coeff, variables=expr.vars
+    )
 
 
 @diff.register
@@ -87,10 +89,7 @@ def _log_diff(expr: ast.Log, var: str) -> ast.Node:
     # d/dx (log A) = (dA/dx) / A
     a = expr.operands[0]
     da = evaluators.diff(a, var)
-    return ast.mul([
-        ast.inv(a),
-        da
-    ], coeff=expr.coeff, variables=expr.vars)
+    return ast.mul([ast.inv(a), da], coeff=expr.coeff, variables=expr.vars)
 
 
 @diff.register
@@ -98,10 +97,7 @@ def _exp_diff(expr: ast.Exp, var: str) -> ast.Node:
     # d/dx (exp A) = exp(A) * (dA/dx)
     a = expr.operands[0]
     da = evaluators.diff(a, var)
-    return ast.mul([
-        ast.exp(a),
-        da
-    ], coeff=expr.coeff, variables=expr.vars)
+    return ast.mul([ast.exp(a), da], coeff=expr.coeff, variables=expr.vars)
 
 
 @diff.register(ast.Evalf)
@@ -113,7 +109,9 @@ def _special_diff(expr: ast.Node, var: str) -> ast.Node:
     }
     arg = apply[expr.operation](expr.operands[0])
     arg = evaluators.simplify(arg)
-    return evaluators.diff(ast.new_with(expr=arg, variables=expr.vars, coeff=expr.coeff), var)
+    return evaluators.diff(
+        ast.new_with(expr=arg, variables=expr.vars, coeff=expr.coeff), var
+    )
 
 
 @diff.register(ast.Diff)
@@ -123,11 +121,10 @@ def _diff_diff(expr: ast.Diff, var: str) -> ast.Node:
     inner_var_node = expr.operands[1]
     inner_var = _var_from_node(inner_var_node)
     if inner_var is None:
-        raise TypeError(f'Diff node has invalid variable operand: {inner_var_node}')
+        raise TypeError(f"Diff node has invalid variable operand: {inner_var_node}")
 
     # d/dx (d/dy f) = d²f/dxdy - differentiate inner result w.r.t. outer var
     inner_deriv = evaluators.diff(inner_expr, inner_var)
     return evaluators.diff(
-        ast.new_with(expr=inner_deriv, variables=expr.vars, coeff=expr.coeff),
-        var
+        ast.new_with(expr=inner_deriv, variables=expr.vars, coeff=expr.coeff), var
     )

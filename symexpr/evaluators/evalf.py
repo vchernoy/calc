@@ -1,5 +1,5 @@
-import math
 import functools
+import math
 from collections.abc import Callable
 
 import symexpr.ast as ast
@@ -13,7 +13,7 @@ def evalf(expr: ast.Node) -> ast.Node:
     :param expr: AST
     :return: AST
     """
-    raise TypeError(f'cannot evalf {expr}')
+    raise TypeError(f"cannot evalf {expr}")
 
 
 @evalf.register
@@ -90,6 +90,7 @@ def _exp_evalf(expr: ast.Exp) -> ast.Node:
 @evalf.register(ast.Diff)
 def _diff_evalf(expr: ast.Diff) -> ast.Node:
     from symexpr.evaluators.diff import _var_from_node
+
     var_node = expr.operands[1]
     var = _var_from_node(var_node)
     if var is None:

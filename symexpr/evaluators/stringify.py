@@ -1,5 +1,6 @@
 import functools
 import itertools
+
 import symexpr.ast as ast
 
 
@@ -10,7 +11,7 @@ def stringify(expr: ast.Node, in_parenthesis: bool = False) -> str:
     :param in_parenthesis: whether to wrap result in parentheses
     :return: string representation
     """
-    raise TypeError(f'cannot stringify {expr}, in_parenthesis={in_parenthesis}')
+    raise TypeError(f"cannot stringify {expr}, in_parenthesis={in_parenthesis}")
 
 
 def _coeff_str(c: float) -> str:
@@ -18,91 +19,101 @@ def _coeff_str(c: float) -> str:
 
 
 def _vars_to_str(expr: ast.Node, _: bool = False) -> str:
-    return '*'.join(itertools.chain.from_iterable([v] * d for v, d in sorted(expr.vars.items())))
+    return "*".join(
+        itertools.chain.from_iterable([v] * d for v, d in sorted(expr.vars.items()))
+    )
 
 
 @stringify.register
 def _add_stringify(self: ast.Add, in_parenthesis: bool = False) -> str:
-    res = ''
+    res = ""
     if self.coeff == -1:
-        res = '-'
+        res = "-"
     elif self.coeff != 1:
         res = _coeff_str(self.coeff)
 
     if self.vars:
-        res += _vars_to_str(self) + '*'
+        res += _vars_to_str(self) + "*"
 
-    extra_parenthesis = res != ''
+    extra_parenthesis = res != ""
     if extra_parenthesis:
-        res += '('
+        res += "("
 
-    res += '+'.join(stringify(n, True) for n in self.operands)
+    res += "+".join(stringify(n, True) for n in self.operands)
     if extra_parenthesis:
-        res += ')'
+        res += ")"
 
-    return f'({res})' if in_parenthesis else res
+    return f"({res})" if in_parenthesis else res
 
 
 @stringify.register
 def _mul_stringify(self: ast.Mul, in_parenthesis: bool = False) -> str:
-    res = ''
+    res = ""
     if self.coeff == -1:
-        res = '-'
+        res = "-"
     elif self.coeff != 1:
         res = _coeff_str(self.coeff)
 
     if self.vars:
-        res += _vars_to_str(self) + '*('
+        res += _vars_to_str(self) + "*("
 
-    res += '*'.join(stringify(n, True) for n in self.operands)
+    res += "*".join(stringify(n, True) for n in self.operands)
     if self.vars:
-        res += ')'
+        res += ")"
 
-    return f'({res})' if in_parenthesis else res
+    return f"({res})" if in_parenthesis else res
 
 
 @stringify.register
 def _inv_stringify(self: ast.Inv, in_parenthesis: bool = False) -> str:
     if self.coeff == -1 and self.vars:
-        res = '-'
+        res = "-"
     elif self.coeff != 1 or not self.vars:
         res = _coeff_str(self.coeff)
     else:
-        res = ''
+        res = ""
 
     res += _vars_to_str(self)
-    res += '/' + stringify(self.operands[0], True)
+    res += "/" + stringify(self.operands[0], True)
 
-    return f'({res})' if in_parenthesis else res
+    return f"({res})" if in_parenthesis else res
 
 
 @stringify.register
 def _one_stringify(self: ast.One, in_parenthesis: bool = False) -> str:
-    res = ''
+    res = ""
     if self.coeff == -1 and self.vars:
-        res = '-'
+        res = "-"
     elif self.coeff != 1 or not self.vars:
         res = _coeff_str(self.coeff)
 
     res += _vars_to_str(self)
-    around_parenthesis = in_parenthesis and ((self.coeff != 1 and self.vars) or self.coeff < 0)
-    return f'({res})' if around_parenthesis else res
+    around_parenthesis = in_parenthesis and (
+        (self.coeff != 1 and self.vars) or self.coeff < 0
+    )
+    return f"({res})" if around_parenthesis else res
 
 
 @stringify.register(ast.Diff)
 def _diff_stringify(self: ast.Diff, in_parenthesis: bool = False) -> str:
-    res = ''
+    res = ""
     if self.coeff == -1:
-        res = '-'
+        res = "-"
     elif self.coeff != 1:
         res = _coeff_str(self.coeff)
 
     if self.vars:
-        res += _vars_to_str(self) + '*'
+        res += _vars_to_str(self) + "*"
 
-    res += 'diff(' + stringify(self.operands[0], True) + ', ' + stringify(self.operands[1], True) + ')'
+    res += (
+        "diff("
+        + stringify(self.operands[0], True)
+        + ", "
+        + stringify(self.operands[1], True)
+        + ")"
+    )
 
-    return f'({res})' if in_parenthesis else res
+    return f"({res})" if in_parenthesis else res
 
 
 @stringify.register(ast.Exp)
@@ -110,15 +121,15 @@ def _diff_stringify(self: ast.Diff, in_parenthesis: bool = False) -> str:
 @stringify.register(ast.Evalf)
 @stringify.register(ast.Expand)
 def _stringify(self: ast.Log, in_parenthesis: bool = False) -> str:
-    res = ''
+    res = ""
     if self.coeff == -1:
-        res = '-'
+        res = "-"
     elif self.coeff != 1:
         res = _coeff_str(self.coeff)
 
     if self.vars:
-        res += _vars_to_str(self) + '*'
+        res += _vars_to_str(self) + "*"
 
-    res += self.operation.name + ' ' + stringify(self.operands[0], True)
+    res += self.operation.name + " " + stringify(self.operands[0], True)
 
-    return f'({res})' if in_parenthesis else res
+    return f"({res})" if in_parenthesis else res

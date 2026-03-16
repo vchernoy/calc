@@ -12,36 +12,40 @@ class Type(enum.Enum):
     When tokenizer (Lexer) reaches the end of the input, it generates eol-token.
     When it finds an invalid character, it creates an err-token.
     """
-    l_paren = '('
-    r_paren = ')'
-    number = 'num'
-    id = 'id'
-    add = '+'
-    sub = '-'
-    mul = '*'
-    div = '/'
-    equal = '='
-    comma = ','
-    error = 'err'
-    eol = 'EOL'
+
+    l_paren = "("
+    r_paren = ")"
+    number = "num"
+    id = "id"
+    add = "+"
+    sub = "-"
+    mul = "*"
+    div = "/"
+    equal = "="
+    comma = ","
+    error = "err"
+    eol = "EOL"
 
 
-simple_tokens: dict[str, Type] = {t.value: t for t in [
-    Type.l_paren,
-    Type.r_paren,
-    Type.add,
-    Type.sub,
-    Type.mul,
-    Type.div,
-    Type.equal,
-    Type.comma,
-]}
+simple_tokens: dict[str, Type] = {
+    t.value: t
+    for t in [
+        Type.l_paren,
+        Type.r_paren,
+        Type.add,
+        Type.sub,
+        Type.mul,
+        Type.div,
+        Type.equal,
+        Type.comma,
+    ]
+}
 
 
 class Error:
     def __init__(self, loc: int, expected: list[str], parsed: str, ahead: str):
         if not isinstance(loc, int):
-            raise ValueError(f'loc must be int, got {type(loc)}')
+            raise ValueError(f"loc must be int, got {type(loc)}")
 
         self.loc: int = loc
         self.expected: list[str] = expected
@@ -49,7 +53,7 @@ class Error:
         self.ahead: str = ahead
 
     def __str__(self) -> str:
-        return f'Error @ {self.loc}: expected={self.expected}, parsed={self.parsed}, next={self.ahead}'
+        return f"Error @ {self.loc}: expected={self.expected}, parsed={self.parsed}, next={self.ahead}"
 
 
 class Token:
@@ -59,6 +63,7 @@ class Token:
     If typ is Type.number, the token contains number (integer of float)
     If type is Type.error, the token contains err representing the Lexer error.
     """
+
     def __init__(
         self,
         loc: int,
@@ -68,9 +73,9 @@ class Token:
         err: Error | None = None,
     ):
         if not isinstance(typ, Type):
-            raise ValueError(f'typ must be Type, got {type(typ)}')
+            raise ValueError(f"typ must be Type, got {type(typ)}")
         if not isinstance(loc, int):
-            raise ValueError(f'loc must be int, got {type(loc)}')
+            raise ValueError(f"loc must be int, got {type(loc)}")
 
         self.loc: int = loc
         self.typ: Type = typ
@@ -79,14 +84,14 @@ class Token:
         self.err: Error | None = err
 
     def __repr__(self) -> str:
-        return f'({self.typ};{self.name};{self.number};{self.err}:{self.loc})'
+        return f"({self.typ};{self.name};{self.number};{self.err}:{self.loc})"
 
     def __str__(self) -> str:
         if self.typ == Type.number:
-            return str(self.number) if self.number is not None else ''
+            return str(self.number) if self.number is not None else ""
 
         if self.typ == Type.id:
-            return self.name if self.name is not None else ''
+            return self.name if self.name is not None else ""
 
         if self.typ == Type.error:
             return str(self.typ)
@@ -98,6 +103,7 @@ class Scanner:
     """
     Scanner provides the characters in the input stream. The scanner can look at one single character in ahead.
     """
+
     def __init__(self, source: str):
         self._src = source
         self._loc: int = -1
@@ -140,17 +146,17 @@ def tokenize(scanner: Scanner) -> Generator[Token, None, None]:
             while scanner.expected_next(string.digits):
                 num += scanner.move_next()
 
-            if scanner.expected_next('.'):
+            if scanner.expected_next("."):
                 is_int = False
                 num += scanner.move_next()
 
                 while scanner.expected_next(string.digits):
                     num += scanner.move_next()
 
-            if scanner.expected_next('Ee'):
+            if scanner.expected_next("Ee"):
                 is_int = False
                 num += scanner.move_next()
-                if scanner.expected_next('+-'):
+                if scanner.expected_next("+-"):
                     num += scanner.move_next()
 
                 if scanner.expected_next(string.digits):
@@ -163,7 +169,12 @@ def tokenize(scanner: Scanner) -> Generator[Token, None, None]:
                         yield Token(
                             loc=scanner.loc(),
                             typ=Type.error,
-                            err=Error(loc=scanner.loc(), expected=['0-9'], parsed=num, ahead=scanner.look_next())
+                            err=Error(
+                                loc=scanner.loc(),
+                                expected=["0-9"],
+                                parsed=num,
+                                ahead=scanner.look_next(),
+                            ),
                         )
 
                         scanner.move_next()
@@ -171,7 +182,12 @@ def tokenize(scanner: Scanner) -> Generator[Token, None, None]:
                         yield Token(
                             loc=scanner.loc(),
                             typ=Type.error,
-                            err=Error(loc=scanner.loc(), expected=['0-9'], parsed=num, ahead='')
+                            err=Error(
+                                loc=scanner.loc(),
+                                expected=["0-9"],
+                                parsed=num,
+                                ahead="",
+                            ),
                         )
 
                     continue
@@ -182,7 +198,12 @@ def tokenize(scanner: Scanner) -> Generator[Token, None, None]:
                 yield Token(
                     loc=loc,
                     typ=Type.error,
-                    err=Error(loc=scanner.loc(), expected=['(0-9)+[.(0-9)*][[E|e][+|-](0-9)+]'], parsed=num, ahead=scanner.look_next())
+                    err=Error(
+                        loc=scanner.loc(),
+                        expected=["(0-9)+[.(0-9)*][[E|e][+|-](0-9)+]"],
+                        parsed=num,
+                        ahead=scanner.look_next(),
+                    ),
                 )
 
         elif scanner.expected_next(string.ascii_lowercase):
@@ -191,13 +212,18 @@ def tokenize(scanner: Scanner) -> Generator[Token, None, None]:
                 lit += scanner.move_next()
 
             yield Token(loc, Type.id, lit)
-        elif scanner.expected_next(' \t'):
+        elif scanner.expected_next(" \t"):
             scanner.move_next()
         else:
             yield Token(
                 loc=loc,
                 typ=Type.error,
-                err=Error(loc=scanner.loc(), expected=['(0-9)|(a-z)|(|)|+|-|*|/|='], parsed='', ahead=scanner.look_next())
+                err=Error(
+                    loc=scanner.loc(),
+                    expected=["(0-9)|(a-z)|(|)|+|-|*|/|="],
+                    parsed="",
+                    ahead=scanner.look_next(),
+                ),
             )
             scanner.move_next()
 

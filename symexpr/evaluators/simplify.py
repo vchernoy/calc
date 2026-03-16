@@ -16,7 +16,7 @@ def simplify(expr: ast.Node) -> ast.Node:
     :param expr: AST
     :return: AST
     """
-    raise TypeError(f'cannot simplify {expr}')
+    raise TypeError(f"cannot simplify {expr}")
 
 
 @simplify.register
@@ -33,11 +33,16 @@ def _exp_simplify(expr: ast.Exp) -> ast.Node:
             coeff=expr.coeff,
             variables=expr.vars,
             operands=[
-                ast.exp(ast.add([n], variables=evaluated.vars, coeff=evaluated.coeff)) for n in evaluated.operands
+                ast.exp(ast.add([n], variables=evaluated.vars, coeff=evaluated.coeff))
+                for n in evaluated.operands
             ],
         )
 
-    if evaluated.operation == ast.OpKind.log and not evaluated.vars and evaluated.coeff == 1:
+    if (
+        evaluated.operation == ast.OpKind.log
+        and not evaluated.vars
+        and evaluated.coeff == 1
+    ):
         return ast.add(
             coeff=expr.coeff,
             variables=expr.vars,
@@ -55,11 +60,18 @@ def _exp_simplify(expr: ast.Exp) -> ast.Node:
 @simplify.register
 def _log_simplify(expr: ast.Log) -> ast.Node:
     evaluated = simplify(expr.operands[0])
-    if evaluated.operation in (ast.OpKind.exp, ast.OpKind.mul, ast.OpKind.one, ast.OpKind.inv):
+    if evaluated.operation in (
+        ast.OpKind.exp,
+        ast.OpKind.mul,
+        ast.OpKind.one,
+        ast.OpKind.inv,
+    ):
         nodes: list[ast.Node] = []
         if evaluated.coeff != 1:
             nodes.append(ast.log(ast.number(evaluated.coeff)))
-        nodes.extend(ast.log(expr=ast.variable(v), coeff=p) for v, p in evaluated.vars.items())
+        nodes.extend(
+            ast.log(expr=ast.variable(v), coeff=p) for v, p in evaluated.vars.items()
+        )
         if evaluated.operation == ast.OpKind.exp:
             nodes.append(evaluated.operands[0])
         if evaluated.operation == ast.OpKind.mul:
@@ -69,23 +81,20 @@ def _log_simplify(expr: ast.Log) -> ast.Node:
             if neg_log is not None:
                 nodes.append(neg_log)
 
-        return ast.add(
-            variables=expr.vars,
-            operands=nodes,
-            coeff=expr.coeff
-        )
+        return ast.add(variables=expr.vars, operands=nodes, coeff=expr.coeff)
 
     return ast.new(
         operation=expr.operation,
         variables=expr.vars,
         operands=[evaluated],
-        coeff=expr.coeff
+        coeff=expr.coeff,
     )
 
 
 @simplify.register(ast.Diff)
 def _diff_simplify(expr: ast.Diff) -> ast.Node:
     from symexpr.evaluators.diff import _var_from_node
+
     var_node = expr.operands[1]
     var = _var_from_node(var_node)
     if var is None:
@@ -138,9 +147,10 @@ def _add_simplify(expr: ast.Add) -> ast.Node:
     return ast.add(
         operands=list(
             itertools.chain.from_iterable(l for _, l in sorted(pos_degree.items()))
-        ) + [t for t in evaluated if t.degree() < 0],
+        )
+        + [t for t in evaluated if t.degree() < 0],
         coeff=expr.coeff,
-        variables=expr.vars
+        variables=expr.vars,
     )
 
 
@@ -163,35 +173,51 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
     evaluated2 = []
     for n in evaluated1:
         if n.operation == ast.OpKind.mul:
-            raise ValueError('Mul nodes should be flattened in evaluated1')
+            raise ValueError("Mul nodes should be flattened in evaluated1")
 
         res_vars.update(n.vars)
         res_coeff *= n.coeff
 
         if n.operation != ast.OpKind.one:
-            evaluated2.append(simplify(ast.new(operation=n.operation, operands=n.operands)))
+            evaluated2.append(
+                simplify(ast.new(operation=n.operation, operands=n.operands))
+            )
 
     evaluated3 = [n for n in evaluated2 if n.operation != ast.OpKind.inv]
     inv_coeff: float = 1.0
     for n in evaluated2:
-        if n.operation not in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf]:
-            raise ValueError(f'unexpected operation in _mul_simplify: {n.operation}')
+        if n.operation not in [
+            ast.OpKind.inv,
+            ast.OpKind.add,
+            ast.OpKind.log,
+            ast.OpKind.exp,
+            ast.OpKind.evalf,
+        ]:
+            raise ValueError(f"unexpected operation in _mul_simplify: {n.operation}")
         if n.coeff != 1 or n.vars:
-            raise ValueError('expected coeff=1 and no vars in _mul_simplify')
+            raise ValueError("expected coeff=1 and no vars in _mul_simplify")
 
         if n.operation == ast.OpKind.inv:
             t = n.operands[0]
             res_vars.update({v: -p for v, p in t.vars.items()})
             inv_coeff *= t.coeff
             if t.operation != ast.OpKind.one:
-                evaluated3.append(ast.inv(ast.new(operation=t.operation, operands=t.operands)))
+                evaluated3.append(
+                    ast.inv(ast.new(operation=t.operation, operands=t.operands))
+                )
 
     evaluated = []
     for n in evaluated3:
-        if n.operation not in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf]:
-            raise ValueError(f'unexpected operation in _mul_simplify: {n.operation}')
+        if n.operation not in [
+            ast.OpKind.inv,
+            ast.OpKind.add,
+            ast.OpKind.log,
+            ast.OpKind.exp,
+            ast.OpKind.evalf,
+        ]:
+            raise ValueError(f"unexpected operation in _mul_simplify: {n.operation}")
         if n.coeff != 1 or n.vars:
-            raise ValueError('expected coeff=1 and no vars in _mul_simplify')
+            raise ValueError("expected coeff=1 and no vars in _mul_simplify")
 
         evaluated.append(n)
 
@@ -201,8 +227,11 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
     n = ast.inv(expr=ast.term(inv_coeff, inv_vars), variables=pos_vars, coeff=res_coeff)
 
     operands: list[ast.Node] = list(evaluated)
-    return ast.mul(operands, coeff=n.coeff, variables=n.vars) if n.operation == ast.OpKind.one \
+    return (
+        ast.mul(operands, coeff=n.coeff, variables=n.vars)
+        if n.operation == ast.OpKind.one
         else ast.mul(operands + [n])
+    )
 
 
 @simplify.register
@@ -216,9 +245,7 @@ def _inv_simplify(expr: ast.Inv) -> ast.Node:
 
     if evaluated.operation == ast.OpKind.one:
         return ast.inv(
-            ast.term(evaluated.coeff, inv_vars),
-            coeff=expr.coeff,
-            variables=pos_vars
+            ast.term(evaluated.coeff, inv_vars), coeff=expr.coeff, variables=pos_vars
         )
 
     if evaluated.operation == ast.OpKind.inv:
@@ -228,24 +255,30 @@ def _inv_simplify(expr: ast.Inv) -> ast.Node:
                     ast.inv(
                         ast.term(evaluated.coeff, inv_vars),
                         coeff=expr.coeff,
-                        variables=pos_vars
+                        variables=pos_vars,
                     ),
-                    evaluated.operands[0]
+                    evaluated.operands[0],
                 ]
             )
         )
 
     if evaluated.operation == ast.OpKind.mul:
-        inversed_terms = [ast.inv(t) for t in evaluated.operands if t.operation == ast.OpKind.inv]
+        inversed_terms = [
+            ast.inv(t) for t in evaluated.operands if t.operation == ast.OpKind.inv
+        ]
         other_terms = [t for t in evaluated.operands if t.operation != ast.OpKind.inv]
         inv_first = ast.inv(
-            ast.mul(cast(list[ast.Node], other_terms), coeff=evaluated.coeff, variables=inv_vars),
+            ast.mul(
+                cast(list[ast.Node], other_terms),
+                coeff=evaluated.coeff,
+                variables=inv_vars,
+            ),
             coeff=expr.coeff,
-            variables=pos_vars
+            variables=pos_vars,
         )
         operands = cast(
             list[ast.Node],
-            ([inv_first] if inv_first is not None else []) + inversed_terms
+            ([inv_first] if inv_first is not None else []) + inversed_terms,
         )
         return simplify(ast.mul(operands=operands))
 
@@ -255,9 +288,9 @@ def _inv_simplify(expr: ast.Inv) -> ast.Node:
                 operation=evaluated.operation,
                 variables=inv_vars,
                 operands=evaluated.operands,
-                coeff=evaluated.coeff
+                coeff=evaluated.coeff,
             )
         ),
         coeff=expr.coeff,
-        variables=pos_vars
+        variables=pos_vars,
     )

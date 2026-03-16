@@ -1,6 +1,6 @@
 import collections
-import math
 import enum
+import math
 import typing
 
 """
@@ -14,6 +14,7 @@ class OpKind(enum.Enum):
     So for now, having in each node the information about its type is redundant,
     but it is much simpler to manipulate with such nodes.
     """
+
     add = 1
     one = 2
     mul = 3
@@ -28,31 +29,34 @@ class OpKind(enum.Enum):
 Num: typing.TypeAlias = float
 VarTerm: typing.TypeAlias = collections.Counter[str]
 Vars: typing.TypeAlias = set[str]
-Nodes: typing.TypeAlias = list['Node']
+Nodes: typing.TypeAlias = list["Node"]
 
 
 class Node:
     def __init__(
-            self,
-            operation: OpKind,
-            coeff: Num = 1,
-            variables: VarTerm | None = None,
-            operands: Nodes | None = None
+        self,
+        operation: OpKind,
+        coeff: Num = 1,
+        variables: VarTerm | None = None,
+        operands: Nodes | None = None,
     ):
         if not isinstance(operation, OpKind):
-            raise ValueError(f'operation must be OpKind, got {type(operation)}')
+            raise ValueError(f"operation must be OpKind, got {type(operation)}")
         if not isinstance(coeff, (float, int)):
-            raise ValueError(f'coeff must be float or int, got {type(coeff)}')
+            raise ValueError(f"coeff must be float or int, got {type(coeff)}")
 
-        self.vars = collections.Counter({v: p for v, p in variables.items() if p != 0}) \
-            if variables else collections.Counter()
+        self.vars = (
+            collections.Counter({v: p for v, p in variables.items() if p != 0})
+            if variables
+            else collections.Counter()
+        )
 
         self.operation: OpKind = operation
         self.coeff: Num = coeff
         self.operands: Nodes = operands if operands else []
 
         if not isinstance(self.operands, list):
-            raise ValueError(f'operands must be list, got {type(self.operands)}')
+            raise ValueError(f"operands must be list, got {type(self.operands)}")
 
     def degree(self, var: str | None = None) -> int:
         raise NotImplementedError()
@@ -64,20 +68,20 @@ class Node:
         raise NotImplementedError()
 
     def footprint(self) -> str:
-        return ','.join(f'{v}^{p}' for v, p in sorted(self.vars.items()))
+        return ",".join(f"{v}^{p}" for v, p in sorted(self.vars.items()))
 
     def __repr__(self) -> str:
         r = [self.operation.name]
         if self.coeff != 1:
-            r.append(f'{self.coeff}')
+            r.append(f"{self.coeff}")
 
         if self.vars:
-            r.append('(' + ' '.join(f"{v}^{p}" for v, p in self.vars.items()) + ')')
+            r.append("(" + " ".join(f"{v}^{p}" for v, p in self.vars.items()) + ")")
 
         if self.operands:
             r.extend(repr(o) for o in self.operands)
 
-        return '[' + ', '.join(r) + ']'
+        return "[" + ", ".join(r) + "]"
 
     def __str__(self, in_parenthesis: bool = False) -> str:
         import symexpr.evaluators as evaluators
@@ -91,10 +95,16 @@ class Add(Node):
     For examples:
       2x*x*y*(expr1 + expr2 + ... + exprn) could be represented by one Add-node
     """
-    def __init__(self, coeff: Num = 1, variables: VarTerm | None = None, operands: Nodes | None = None):
+
+    def __init__(
+        self,
+        coeff: Num = 1,
+        variables: VarTerm | None = None,
+        operands: Nodes | None = None,
+    ):
         super().__init__(OpKind.add, coeff, variables, operands)
         if len(self.operands) < 2:
-            raise ValueError('Add requires at least 2 operands')
+            raise ValueError("Add requires at least 2 operands")
 
     def degree(self, var: str | None = None) -> int:
         return _degree(self, var) + max(n.degree(var) for n in self.operands)
@@ -112,10 +122,16 @@ class Mul(Node):
     For examples:
       2x*x*y * expr1 * expr2 * ... * exprn could be represented by one Mul-node
     """
-    def __init__(self, coeff: Num = 1, variables: VarTerm | None = None, operands: Nodes | None = None):
+
+    def __init__(
+        self,
+        coeff: Num = 1,
+        variables: VarTerm | None = None,
+        operands: Nodes | None = None,
+    ):
         super().__init__(OpKind.mul, coeff, variables, operands)
         if len(self.operands) < 2:
-            raise ValueError('Mul requires at least 2 operands')
+            raise ValueError("Mul requires at least 2 operands")
 
     def degree(self, var: str | None = None) -> int:
         return _degree(self, var) + sum(n.degree(var) for n in self.operands)
@@ -133,10 +149,16 @@ class Inv(Node):
     For examples:
       2x*x*y / expr could be represented by one Inv-node
     """
-    def __init__(self, coeff: Num = 1, variables: VarTerm | None = None, operands: Nodes | None = None):
+
+    def __init__(
+        self,
+        coeff: Num = 1,
+        variables: VarTerm | None = None,
+        operands: Nodes | None = None,
+    ):
         super().__init__(OpKind.inv, coeff, variables, operands)
         if len(self.operands) != 1:
-            raise ValueError('Inv requires exactly 1 operand')
+            raise ValueError("Inv requires exactly 1 operand")
 
     def degree(self, var: str | None = None) -> int:
         return _degree(self, var) - self.operands[0].degree(var)
@@ -154,6 +176,7 @@ class One(Node):
     For examples:
       2x*x*y could be represented by one One-node
     """
+
     def __init__(self, coeff: Num = 1, variables: VarTerm | None = None):
         super().__init__(OpKind.one, coeff, variables)
 
@@ -173,10 +196,16 @@ class Log(Node):
     For examples:
       2x*x*y * log expr could be represented by one Log-node
     """
-    def __init__(self, coeff: Num = 1, variables: VarTerm | None = None, operands: Nodes | None = None):
+
+    def __init__(
+        self,
+        coeff: Num = 1,
+        variables: VarTerm | None = None,
+        operands: Nodes | None = None,
+    ):
         super().__init__(OpKind.log, coeff, variables, operands)
         if len(self.operands) != 1:
-            raise ValueError('Log requires exactly 1 operand')
+            raise ValueError("Log requires exactly 1 operand")
 
     def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
@@ -194,10 +223,16 @@ class Exp(Node):
     For examples:
       2x*x*y * exp expr could be represented by one Exp-node
     """
-    def __init__(self, coeff: Num = 1, variables: VarTerm | None = None, operands: Nodes | None = None):
+
+    def __init__(
+        self,
+        coeff: Num = 1,
+        variables: VarTerm | None = None,
+        operands: Nodes | None = None,
+    ):
         super().__init__(OpKind.exp, coeff, variables, operands)
         if len(self.operands) != 1:
-            raise ValueError('Exp requires exactly 1 operand')
+            raise ValueError("Exp requires exactly 1 operand")
 
     def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
@@ -214,10 +249,16 @@ class Evalf(Node):
     Represents coeff * {x^k for x,k in vars} * evalf(operands[0]).
     Wrapper that forces numerical evaluation of the inner expression.
     """
-    def __init__(self, coeff: Num = 1, variables: VarTerm | None = None, operands: Nodes | None = None):
+
+    def __init__(
+        self,
+        coeff: Num = 1,
+        variables: VarTerm | None = None,
+        operands: Nodes | None = None,
+    ):
         super().__init__(OpKind.evalf, coeff, variables, operands)
         if len(self.operands) != 1:
-            raise ValueError('Evalf requires exactly 1 operand')
+            raise ValueError("Evalf requires exactly 1 operand")
 
     def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
@@ -234,10 +275,16 @@ class Expand(Node):
     Represents coeff * {x^k for x,k in vars} * expand(operands[0]).
     Wrapper that forces expansion of parentheses in the inner expression.
     """
-    def __init__(self, coeff: Num = 1, variables: VarTerm | None = None, operands: Nodes | None = None):
+
+    def __init__(
+        self,
+        coeff: Num = 1,
+        variables: VarTerm | None = None,
+        operands: Nodes | None = None,
+    ):
         super().__init__(OpKind.expand, coeff, variables, operands)
         if len(self.operands) != 1:
-            raise ValueError('Expand requires exactly 1 operand')
+            raise ValueError("Expand requires exactly 1 operand")
 
     def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
@@ -254,10 +301,16 @@ class Diff(Node):
     Represents coeff * {x^k for x,k in vars} * d(operands[0])/d(operands[1]).
     operands[0] is the expression to differentiate, operands[1] is the variable.
     """
-    def __init__(self, coeff: Num = 1, variables: VarTerm | None = None, args: Nodes | None = None):
+
+    def __init__(
+        self,
+        coeff: Num = 1,
+        variables: VarTerm | None = None,
+        args: Nodes | None = None,
+    ):
         super().__init__(OpKind.diff, coeff, variables, args)
         if len(self.operands) != 2:
-            raise ValueError('Diff requires exactly 2 operands (expr, var)')
+            raise ValueError("Diff requires exactly 2 operands (expr, var)")
 
     def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
@@ -269,13 +322,18 @@ class Diff(Node):
         return self.operands[0].numeric()
 
 
-def new(operation: OpKind, coeff: Num = 1, variables: VarTerm | None = None, operands: Nodes | None = None) -> Node:
+def new(
+    operation: OpKind,
+    coeff: Num = 1,
+    variables: VarTerm | None = None,
+    operands: Nodes | None = None,
+) -> Node:
     """
     Factory methods to create nodes of different types.
     """
     if operation == OpKind.one:
         if operands:
-            raise ValueError('One node must not have operands')
+            raise ValueError("One node must not have operands")
         return term(coeff, variables)
 
     if operation == OpKind.add:
@@ -285,7 +343,7 @@ def new(operation: OpKind, coeff: Num = 1, variables: VarTerm | None = None, ope
         return mul(operands or [], variables, coeff)
 
     if not operands:
-        raise ValueError(f'{operation} requires operands')
+        raise ValueError(f"{operation} requires operands")
     if operation == OpKind.inv:
         return inv(operands[0], variables, coeff)
 
@@ -304,7 +362,7 @@ def new(operation: OpKind, coeff: Num = 1, variables: VarTerm | None = None, ope
     if operation == OpKind.diff:
         return diff(operands, variables, coeff)
 
-    raise ValueError(f'unknown operation: {operation}')
+    raise ValueError(f"unknown operation: {operation}")
 
 
 def term(coeff: Num, variables: VarTerm | None = None) -> One:
@@ -332,7 +390,12 @@ def new_with(expr: Node, variables: VarTerm | None = None, coeff: Num = 1) -> No
         res_vars = collections.Counter(expr.vars)
         res_vars.update(variables)
 
-    return new(operation=expr.operation, coeff=coeff * expr.coeff, variables=res_vars, operands=expr.operands)
+    return new(
+        operation=expr.operation,
+        coeff=coeff * expr.coeff,
+        variables=res_vars,
+        operands=expr.operands,
+    )
 
 
 def add(operands: Nodes, variables: VarTerm | None = None, coeff: Num = 1) -> Node:
@@ -343,8 +406,11 @@ def add(operands: Nodes, variables: VarTerm | None = None, coeff: Num = 1) -> No
     if not operands:
         return number(0)
 
-    return Add(operands=operands, variables=variables, coeff=coeff) if len(operands) > 1 \
+    return (
+        Add(operands=operands, variables=variables, coeff=coeff)
+        if len(operands) > 1
         else new_with(operands[0], variables, coeff)
+    )
 
 
 def mul(operands: Nodes, variables: VarTerm | None = None, coeff: Num = 1) -> Node:
@@ -355,8 +421,11 @@ def mul(operands: Nodes, variables: VarTerm | None = None, coeff: Num = 1) -> No
     if not operands:
         return term(coeff=coeff, variables=variables)
 
-    return Mul(operands=operands, variables=variables, coeff=coeff) if len(operands) > 1 \
+    return (
+        Mul(operands=operands, variables=variables, coeff=coeff)
+        if len(operands) > 1
         else new_with(operands[0], variables, coeff)
+    )
 
 
 def neg(expr: Node) -> Node | None:
@@ -390,28 +459,43 @@ def inv(expr: Node, variables: VarTerm | None = None, coeff: Num = 1) -> One | I
 
 
 def log(expr: Node, variables: VarTerm | None = None, coeff: Num = 1) -> One | Log:
-    return Log(operands=[expr], variables=variables, coeff=coeff) if expr \
+    return (
+        Log(operands=[expr], variables=variables, coeff=coeff)
+        if expr
         else term(coeff=coeff, variables=variables)
+    )
 
 
 def exp(expr: Node, variables: VarTerm | None = None, coeff: Num = 1) -> One | Exp:
-    return Exp(operands=[expr], variables=variables, coeff=coeff) if expr \
+    return (
+        Exp(operands=[expr], variables=variables, coeff=coeff)
+        if expr
         else term(coeff=coeff, variables=variables)
+    )
 
 
 def evalf(expr: Node, variables: VarTerm | None = None, coeff: Num = 1) -> Node:
-    return Evalf(operands=[expr], variables=variables, coeff=coeff) if expr \
+    return (
+        Evalf(operands=[expr], variables=variables, coeff=coeff)
+        if expr
         else term(coeff=coeff, variables=variables)
+    )
 
 
 def expand(expr: Node, variables: VarTerm | None = None, coeff: Num = 1) -> Node:
-    return Expand(operands=[expr], variables=variables, coeff=coeff) if expr \
+    return (
+        Expand(operands=[expr], variables=variables, coeff=coeff)
+        if expr
         else term(coeff=coeff, variables=variables)
+    )
 
 
 def diff(args: Nodes, variables: VarTerm | None = None, coeff: Num = 1) -> Node:
-    return Diff(args=args, variables=variables, coeff=coeff) if args \
+    return (
+        Diff(args=args, variables=variables, coeff=coeff)
+        if args
         else term(coeff=coeff, variables=variables)
+    )
 
 
 def _degree(expr: Node, var: str | None = None) -> int:

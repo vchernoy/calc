@@ -18,7 +18,7 @@ def solve(expr: ast.Node, var: str) -> tuple[ast.Node, ast.Node] | None:
     :param var: to find root for this variable
     :return: a pair (solution as AST, variable as AST) or None if failed to solve
     """
-    raise TypeError(f'cannot solve {expr} over {var}')
+    raise TypeError(f"cannot solve {expr} over {var}")
 
 
 @solve.register
@@ -110,17 +110,19 @@ def _add_solve(expr: ast.Add, var: str) -> tuple[ast.Node, ast.Node] | None:
                 operation=term.operation,
                 operands=term.operands,
                 coeff=term.coeff,
-                variables=reduced_vars
+                variables=reduced_vars,
             )
         )
 
     neg_add = ast.neg(ast.add(non_var_terms))
     if neg_add is None:
-        raise ValueError('neg(add(non_var_terms)) returned None')
+        raise ValueError("neg(add(non_var_terms)) returned None")
     term1 = expand(neg_add)
     term2 = ast.inv(ast.add(reduced_var_terms))
 
-    return ast.mul([term1, term2]), ast.term(coeff=1, variables=collections.Counter({var: power}))
+    return ast.mul([term1, term2]), ast.term(
+        coeff=1, variables=collections.Counter({var: power})
+    )
 
 
 @solve.register(ast.Evalf)

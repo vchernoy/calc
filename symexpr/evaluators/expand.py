@@ -12,7 +12,7 @@ def expand(expr: ast.Node) -> ast.Node:
     :param expr: AST
     :return: AST
     """
-    raise TypeError(f'cannot expand {expr}')
+    raise TypeError(f"cannot expand {expr}")
 
 
 @expand.register
@@ -29,13 +29,14 @@ def _expand_unary(expr: ast.Node) -> ast.Node:
         operation=expr.operation,
         variables=expr.vars,
         operands=evaluated,
-        coeff=expr.coeff
+        coeff=expr.coeff,
     )
 
 
 @expand.register(ast.Diff)
 def _diff_expand(expr: ast.Diff) -> ast.Node:
     from symexpr.evaluators.diff import _var_from_node
+
     var_node = expr.operands[1]
     var = _var_from_node(var_node)
     if var is None:
@@ -66,7 +67,9 @@ def _add_expand(expr: ast.Add) -> ast.Node:
         return evaluators.simplify(ast.mul(operands=[term, node]))
 
     term1 = ast.term(coeff=node.coeff, variables=node.vars)
-    terms = [evaluators.simplify(ast.mul(operands=[term, t, term1])) for t in node.operands]
+    terms = [
+        evaluators.simplify(ast.mul(operands=[term, t, term1])) for t in node.operands
+    ]
 
     return evaluators.simplify(ast.add(terms))
 

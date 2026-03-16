@@ -1,6 +1,7 @@
-import symexpr.tokenizer as tokenizer
-import symexpr.ast as ast
 import typing
+
+import symexpr.ast as ast
+import symexpr.tokenizer as tokenizer
 
 
 class Error:
@@ -9,13 +10,17 @@ class Error:
         self.expected: set[tokenizer.Type] = expected
         self.received: tokenizer.Token = received
 
-        exp_simple_toks = "','".join(str(t.value) for t in expected if t.value in tokenizer.simple_tokens)
-        exp_other_toks = ",".join(str(t.value) for t in expected if t.value not in tokenizer.simple_tokens)
+        exp_simple_toks = "','".join(
+            str(t.value) for t in expected if t.value in tokenizer.simple_tokens
+        )
+        exp_other_toks = ",".join(
+            str(t.value) for t in expected if t.value not in tokenizer.simple_tokens
+        )
 
         exp_toks = f"'{exp_simple_toks}'" if exp_simple_toks else ""
         if exp_other_toks:
             if exp_toks:
-                exp_toks += ','
+                exp_toks += ","
 
             exp_toks += exp_other_toks
 
@@ -36,6 +41,7 @@ class TokenReader:
     """
     Provides to the next token from the input.
     """
+
     def __init__(self, source: list[tokenizer.Token]):
         self.src: list[tokenizer.Token] = source
         self.loc: int = -1
@@ -60,7 +66,10 @@ Helps in parsing and error handling.
 """
 
 expr_paren_starts: set[tokenizer.Type] = {tokenizer.Type.l_paren}
-short_prod_starts: set[tokenizer.Type] = expr_paren_starts | {tokenizer.Type.number, tokenizer.Type.id}
+short_prod_starts: set[tokenizer.Type] = expr_paren_starts | {
+    tokenizer.Type.number,
+    tokenizer.Type.id,
+}
 prod_starts: set[tokenizer.Type] = short_prod_starts
 sum_starts: set[tokenizer.Type] = prod_starts | {tokenizer.Type.add, tokenizer.Type.sub}
 expr_starts: set[tokenizer.Type] = sum_starts
@@ -69,15 +78,20 @@ expr_starts: set[tokenizer.Type] = sum_starts
 All the valid tokens (no error and no eol tokens)
 """
 all_tokens: set[tokenizer.Type] = {
-    tokenizer.Type.l_paren, tokenizer.Type.r_paren,
-    tokenizer.Type.number, tokenizer.Type.id,
-    tokenizer.Type.add, tokenizer.Type.sub,
-    tokenizer.Type.mul, tokenizer.Type.div,
-    tokenizer.Type.equal, tokenizer.Type.comma
+    tokenizer.Type.l_paren,
+    tokenizer.Type.r_paren,
+    tokenizer.Type.number,
+    tokenizer.Type.id,
+    tokenizer.Type.add,
+    tokenizer.Type.sub,
+    tokenizer.Type.mul,
+    tokenizer.Type.div,
+    tokenizer.Type.equal,
+    tokenizer.Type.comma,
 }
 
 
-def parse(reader: TokenReader, errors: Errors) -> ast.Node|None:
+def parse(reader: TokenReader, errors: Errors) -> ast.Node | None:
     """
     Recognizes:
     EE := E [= E]
@@ -100,7 +114,7 @@ def parse(reader: TokenReader, errors: Errors) -> ast.Node|None:
     return tree
 
 
-def parse_expr(reader: TokenReader, errors: Errors) -> ast.Node|None:
+def parse_expr(reader: TokenReader, errors: Errors) -> ast.Node | None:
     """
     Recognizes the rule:
     EE := E [= E]
@@ -112,7 +126,7 @@ def parse_expr(reader: TokenReader, errors: Errors) -> ast.Node|None:
     return parse_sum(reader, errors)
 
 
-def parse_sum(reader: TokenReader, errors: Errors) -> ast.Node|None:
+def parse_sum(reader: TokenReader, errors: Errors) -> ast.Node | None:
     """
     Recognizes the rule:
     S := ['+'|'-'] P ('+'|'-' P)*
@@ -148,7 +162,7 @@ def parse_sum(reader: TokenReader, errors: Errors) -> ast.Node|None:
     return ast.add(operands)
 
 
-def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
+def parse_product(reader: TokenReader, errors: Errors) -> ast.Node | None:
     """
     Recognizes the rules:
     P := num ('*'|'/' P)*
@@ -180,7 +194,7 @@ def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
         elif prev_tok.typ == tokenizer.Type.l_paren:
             tree = parse_expr_in_parenthesis(reader, errors)
         else:
-            raise ValueError(f'unexpected token in parse_product: {prev_tok.typ}')
+            raise ValueError(f"unexpected token in parse_product: {prev_tok.typ}")
 
         if tree is not None:
             if operation == ast.OpKind.mul:
@@ -190,14 +204,23 @@ def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
             else:
                 operands.append(tree)
 
-        if prev_tok.typ == tokenizer.Type.number and operation in (None, ast.OpKind.mul):
-            if not find_expected(reader, all_tokens - {tokenizer.Type.number} | {tokenizer.Type.eol}, errors):
+        if prev_tok.typ == tokenizer.Type.number and operation in (
+            None,
+            ast.OpKind.mul,
+        ):
+            if not find_expected(
+                reader,
+                all_tokens - {tokenizer.Type.number} | {tokenizer.Type.eol},
+                errors,
+            ):
                 break
         else:
             if not find_expected(
-                    reader,
-                    all_tokens - {tokenizer.Type.number, tokenizer.Type.id, tokenizer.Type.l_paren} | {tokenizer.Type.eol},
-                    errors
+                reader,
+                all_tokens
+                - {tokenizer.Type.number, tokenizer.Type.id, tokenizer.Type.l_paren}
+                | {tokenizer.Type.eol},
+                errors,
             ):
                 break
 
@@ -208,8 +231,11 @@ def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
         elif tok.typ == tokenizer.Type.div:
             operation = ast.OpKind.inv
             reader.move_next()
-        elif prev_tok.typ == tokenizer.Type.number and tok.typ in (tokenizer.Type.id, tokenizer.Type.l_paren) \
-                and operation in (None, ast.OpKind.mul):
+        elif (
+            prev_tok.typ == tokenizer.Type.number
+            and tok.typ in (tokenizer.Type.id, tokenizer.Type.l_paren)
+            and operation in (None, ast.OpKind.mul)
+        ):
             operation = ast.OpKind.mul
         else:
             break
@@ -219,7 +245,7 @@ def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
     return ast.mul(operands)
 
 
-def parse_short_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
+def parse_short_product(reader: TokenReader, errors: Errors) -> ast.Node | None:
     """
     Recognizes the rules:
     SP := PE
@@ -257,7 +283,7 @@ def parse_short_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
     return ast.mul(operands)
 
 
-def parse_diff_args(reader: TokenReader, errors: Errors) -> list[ast.Node]|None:
+def parse_diff_args(reader: TokenReader, errors: Errors) -> list[ast.Node] | None:
     """
     Recognizes the rules:
     DA := `(` E `,` id `)`
@@ -277,7 +303,7 @@ def parse_diff_args(reader: TokenReader, errors: Errors) -> list[ast.Node]|None:
     if not find_expected(reader, {tokenizer.Type.id}, errors):
         return None
 
-    name = reader.move_next().name or ''
+    name = reader.move_next().name or ""
     var = ast.variable(name)
     if find_expected(reader, {tokenizer.Type.r_paren}, errors):
         reader.move_next()
@@ -287,7 +313,7 @@ def parse_diff_args(reader: TokenReader, errors: Errors) -> list[ast.Node]|None:
     return [expr, var]
 
 
-def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node|None:
+def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node | None:
     """
     Recognizes the rules:
     VF := ID | F
@@ -302,20 +328,20 @@ def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node|None:
     if not find_expected(reader, {tokenizer.Type.id}, errors):
         return None
 
-    name = reader.move_next().name or ''
-    if name == 'log':
+    name = reader.move_next().name or ""
+    if name == "log":
         arg = parse_short_product(reader, errors)
         return ast.log(arg) if arg is not None else None
-    if name == 'exp':
+    if name == "exp":
         arg = parse_short_product(reader, errors)
         return ast.exp(arg) if arg is not None else None
-    if name == 'evalf':
+    if name == "evalf":
         arg = parse_short_product(reader, errors)
         return ast.evalf(arg) if arg is not None else None
-    if name == 'expand':
+    if name == "expand":
         arg = parse_short_product(reader, errors)
         return ast.expand(arg) if arg is not None else None
-    if name == 'diff':
+    if name == "diff":
         diff_args = parse_diff_args(reader, errors)
         if diff_args is None:
             return None
@@ -323,7 +349,7 @@ def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node|None:
     return ast.variable(name)
 
 
-def parse_expr_in_parenthesis(reader: TokenReader, errors: Errors) -> ast.Node|None:
+def parse_expr_in_parenthesis(reader: TokenReader, errors: Errors) -> ast.Node | None:
     """
     Recognizes the rules:
     E := '(' E ')'
@@ -343,10 +369,15 @@ def parse_expr_in_parenthesis(reader: TokenReader, errors: Errors) -> ast.Node|N
     return tree
 
 
-def find_expected(reader: TokenReader, expected_tokens: set[tokenizer.Type], errors: Errors) -> bool:
+def find_expected(
+    reader: TokenReader, expected_tokens: set[tokenizer.Type], errors: Errors
+) -> bool:
     if reader.look_next().typ not in expected_tokens:
         errors.append(Error(expected=expected_tokens, received=reader.look_next()))
-        while reader.look_next().typ != tokenizer.Type.eol and reader.look_next().typ not in expected_tokens:
+        while (
+            reader.look_next().typ != tokenizer.Type.eol
+            and reader.look_next().typ not in expected_tokens
+        ):
             reader.move_next()
 
     return reader.look_next().typ in expected_tokens
