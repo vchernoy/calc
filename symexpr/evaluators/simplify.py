@@ -146,7 +146,7 @@ def _add_simplify(expr: ast.Add) -> ast.Node:
 
     return ast.add(
         operands=list(
-            itertools.chain.from_iterable(l for _, l in sorted(pos_degree.items()))
+            itertools.chain.from_iterable(items for _, items in sorted(pos_degree.items()))
         )
         + [t for t in evaluated if t.degree() < 0],
         coeff=expr.coeff,

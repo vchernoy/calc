@@ -61,7 +61,7 @@ def check_solution(simplified: ast.Node, var: str, solution: ast.Node) -> None:
         free_vars = ast.all_vars(simplified_subs)
         print(f"there are still free variables {free_vars}")
         print("let's generate random assignments for them...")
-        assignment = {v: random.uniform(-1000, 1000) for v in free_vars}
+        assignment = {v: random.uniform(-1000, 1000) for v in free_vars}  # nosec B311
         print(f"the generated assignment to be substituted is {assignment}")
         final_ast = evaluators.subs(simplified_subs, assignment)
         final_attempts = all_ways_to_compute(final_ast)

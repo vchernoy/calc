@@ -22,7 +22,8 @@ class TestCalc(unittest.TestCase):
         expected = int(inp) if expected is None else expected
         expr, errors = parse(inp)
         self.assertEqual(errors, [])
-        assert expr is not None
+        if expr is None:
+            self.fail("expected parse to succeed")
         self.assertEqual(int(float(str(evaluators.simplify(expr)))), expected)
         expr1 = evaluators.expand(expr)
         self.assertEqual(int(float(str(evaluators.simplify(expr1)))), expected)
@@ -33,7 +34,8 @@ class TestCalc(unittest.TestCase):
         expected = float(inp) if expected is None else expected
         expr, errors = parse(inp)
         self.assertEqual(errors, [])
-        assert expr is not None
+        if expr is None:
+            self.fail("expected parse to succeed")
         self.assertEqual(float(str(evaluators.simplify(expr))), expected)
         expr1 = evaluators.expand(expr)
         self.assertEqual(float(str(evaluators.simplify(expr1))), expected)
@@ -82,7 +84,8 @@ class TestCalc(unittest.TestCase):
         for inp, expected in TestCalc._table:
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
-            assert expr is not None
+            if expr is None:
+                self.fail("expected parse to succeed")
             self.assertEqual(float(str(evaluators.evalf(expr))), expected)
             expr1 = evaluators.simplify(expr)
             self.assertEqual(float(str(evaluators.evalf(expr1))), expected)
@@ -95,7 +98,8 @@ class TestCalc(unittest.TestCase):
             inp = f'{" + ".join(("1/" + str(j)) for j in range(1, n + 1))} - log({n})'
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
-            assert expr is not None
+            if expr is None:
+                self.fail("expected parse to succeed")
             val = float(str(evaluators.evalf(expr)))
             self.assertAlmostEqual(val, gama, delta=0.5 / n)
             expr1 = evaluators.simplify(expr)
@@ -122,7 +126,8 @@ class TestCalc(unittest.TestCase):
             inp = " * ".join(["(2. - 1.)"] * n)
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
-            assert expr is not None
+            if expr is None:
+                self.fail("expected parse to succeed")
             val = float(str(evaluators.evalf(expr)))
             self.assertAlmostEqual(val, 1, delta=0.0)
             expr1 = evaluators.simplify(expr)
@@ -143,7 +148,8 @@ class TestCalc(unittest.TestCase):
         for inp, expected in cases:
             expr, errors = parse(inp)
             self.assertEqual(errors, [], f"Parse errors for {inp}: {errors}")
-            assert expr is not None
+            if expr is None:
+                self.fail("expected parse to succeed")
             result = str(evaluators.simplify(expr))
             self.assertEqual(
                 result, expected, f"diff: {inp} => {result}, expected {expected}"
@@ -153,9 +159,11 @@ class TestCalc(unittest.TestCase):
         """Test AST substitution (subse) with expression values."""
         expr, errors = parse("2*x+1")
         self.assertEqual(errors, [])
-        assert expr is not None
+        if expr is None:
+            self.fail("expected parse to succeed")
         x_expr, _ = parse("3*y+1")
-        assert x_expr is not None
+        if x_expr is None:
+            self.fail("expected parse to succeed")
         # subse('2x+1', x=3y+1) => 2*(3y+1)+1
         subbed = evaluators.subse(expr, {"x": x_expr})
         simplified = str(evaluators.simplify(subbed))
@@ -168,7 +176,8 @@ class TestCalc(unittest.TestCase):
         for n in 1, 10, 20, 100, 101:
             inp = " * ".join(["(a+b) * (a-b)"] * n)
             expr, errors = parse(inp)
-            assert expr is not None
+            if expr is None:
+                self.fail("expected parse to succeed")
             # For small n, test all forms; expand is numerically unstable for large n
             exprs: list[ast.Node] = [
                 expr,
