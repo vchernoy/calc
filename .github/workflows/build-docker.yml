@@ -3,10 +3,10 @@ name: Docker Image Build
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -32,4 +32,4 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/nanourl:latest
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/symcalc:latest
