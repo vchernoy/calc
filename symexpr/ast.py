@@ -2,8 +2,6 @@
 Immutable AST for arithmetic and symbolic expressions.
 """
 
-from __future__ import annotations
-
 import collections
 import enum
 import math
@@ -326,8 +324,8 @@ class Diff(Node):
 def new(
     operation: OpKind,
     coeff: Num = 1,
-    variables: VarTerm | None = None,
-    operands: Nodes | None = None,
+        variables: VarTerm | None = None,
+        operands: Nodes | None = None,
 ) -> Node:
     """
     Factory methods to create nodes of different types.

@@ -1,7 +1,7 @@
 
 # Interactive Calculator
 
-The tool is implemented in Python 3 (3.9+), and it uses only the standard library.
+The tool is implemented in Python 3 (3.10–3.14), and it uses only the standard library.
 In order to run it, invoke:
 
 ```sh
