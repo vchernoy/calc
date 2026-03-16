@@ -1,3 +1,11 @@
+"""
+The interactive symbolic calculator.
+Run it as:
+  python calc.py
+  python3 calc.py
+It will prompt for input string (expression).
+"""
+
 import itertools
 import operator
 import random
@@ -6,14 +14,6 @@ import symexpr.ast as ast
 import symexpr.evaluators as evaluators
 import symexpr.parser as parser
 import symexpr.tokenizer as tokenizer
-
-"""
-The interactive symbolic calculator.
-Run it as:
-  python calc.py
-  python3 calc.py
-It will prompt for input string (expression).
-"""
 
 
 def all_ways_to_compute(expr: ast.Node) -> list[ast.Node]:

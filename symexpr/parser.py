@@ -26,9 +26,15 @@ class Error:
 
         if received.typ == tokenizer.Type.error and received.err is not None:
             err = received.err
-            self.msg = f"error @ {self.loc}: invalid: '{err.ahead}', expected: {exp_toks} (chars: {err.expected})"
+            self.msg = (
+                f"error @ {self.loc}: invalid: '{err.ahead}', "
+                f"expected: {exp_toks} (chars: {err.expected})"
+            )
         else:
-            self.msg = f"error @ {self.loc}: unexpected: {received.typ.value}, expected: {exp_toks}"
+            self.msg = (
+                f"error @ {self.loc}: unexpected: {received.typ.value}, "
+                f"expected: {exp_toks}"
+            )
 
     def __str__(self) -> str:
         return repr(self)
@@ -48,7 +54,7 @@ class TokenReader:
 
     def look_next(self) -> tokenizer.Token:
         if self.loc + 1 >= len(self.src):
-            raise Exception("no input")
+            raise EOFError("no input")
 
         return self.src[self.loc + 1]
 

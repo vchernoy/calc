@@ -175,7 +175,7 @@ class TestCalc(unittest.TestCase):
     def test_symbolic(self) -> None:
         for n in 1, 10, 20, 100, 101:
             inp = " * ".join(["(a+b) * (a-b)"] * n)
-            expr, errors = parse(inp)
+            expr, _ = parse(inp)
             if expr is None:
                 self.fail("expected parse to succeed")
             # For small n, test all forms; expand is numerically unstable for large n

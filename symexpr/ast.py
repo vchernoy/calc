@@ -1,11 +1,11 @@
+"""
+Immutable AST for arithmetic and symbolic expressions.
+"""
+
 import collections
 import enum
 import math
 import typing
-
-"""
-It defines immutable AST that represents arithmetic/symbolic expressions.
-"""
 
 
 class OpKind(enum.Enum):

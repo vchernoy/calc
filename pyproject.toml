@@ -3,3 +3,21 @@ python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
+
+[tool.pylint.messages_control]
+disable = [
+    "C0103",  # invalid-name (enum values like add, mul are intentional)
+    "C0415",  # import-outside-toplevel (used to avoid cyclic imports)
+    "C0114",  # missing-module-docstring
+    "C0115",  # missing-class-docstring
+    "C0116",  # missing-function-docstring
+    "R0401",  # cyclic-import (structural)
+    "R0402",  # consider-using-from-import (style preference)
+    "R0801",  # duplicate-code (structural)
+    "R0903",  # too-few-public-methods
+    "R0911",  # too-many-return-statements
+    "R0912",  # too-many-branches
+    "R0913",  # too-many-arguments
+    "R0914",  # too-many-locals
+    "R1702",  # too-many-nested-blocks
+]
