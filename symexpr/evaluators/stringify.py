@@ -39,7 +39,7 @@ def _add_stringify(self: ast.Add, in_parenthesis: bool = False) -> str:
     if extra_parenthesis:
         res += "("
 
-    res += "+".join(stringify(n, True) for n in self.operands)
+    res += "+".join(stringify(n, False) for n in self.operands)
     if extra_parenthesis:
         res += ")"
 
@@ -88,9 +88,12 @@ def _one_stringify(self: ast.One, in_parenthesis: bool = False) -> str:
         res = _coeff_str(self.coeff)
 
     res += _vars_to_str(self)
-    around_parenthesis = in_parenthesis and (
-        (self.coeff != 1 and self.vars) or self.coeff < 0
-    )
+    # Add parens when used as function arg to avoid ambiguity (e.g. exp x*x vs exp(x*x))
+    needs_parens = (
+        self.vars
+        and (len(self.vars) > 1 or any(p != 1 for p in self.vars.values()))
+    ) or (self.coeff != 1 and self.vars) or self.coeff < 0
+    around_parenthesis = in_parenthesis and needs_parens
     return f"({res})" if around_parenthesis else res
 
 

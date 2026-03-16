@@ -140,7 +140,7 @@ class TestCalc(unittest.TestCase):
     def test_diff(self) -> None:
         cases = [
             ("diff(x*x, x)", "2x"),
-            ("diff(x*x+3*x, x)", "3+(2x)"),
+            ("diff(x*x+3*x, x)", "3+2x"),
             ("diff(log x, x)", "1/x"),
             ("diff(exp x, x)", "exp x"),
             ("diff(x*x*x, x)", "3x*x"),
