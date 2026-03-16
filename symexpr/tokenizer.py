@@ -74,19 +74,19 @@ class Token:
 
         self.loc: int = loc
         self.typ: Type = typ
-        self.name: str = name
-        self.number: ast.Num = num
-        self.err = err
+        self.name: str | None = name
+        self.number: ast.Num | None = num
+        self.err: Error | None = err
 
     def __repr__(self) -> str:
         return f'({self.typ};{self.name};{self.number};{self.err}:{self.loc})'
 
     def __str__(self) -> str:
         if self.typ == Type.number:
-            return str(self.number)
+            return str(self.number) if self.number is not None else ''
 
         if self.typ == Type.id:
-            return self.name
+            return self.name if self.name is not None else ''
 
         if self.typ == Type.error:
             return str(self.typ)

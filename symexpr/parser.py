@@ -19,7 +19,7 @@ class Error:
 
             exp_toks += exp_other_toks
 
-        if received.typ == tokenizer.Type.error:
+        if received.typ == tokenizer.Type.error and received.err is not None:
             err = received.err
             self.msg = f"error @ {self.loc}: invalid: '{err.ahead}', expected: {exp_toks} (chars: {err.expected})"
         else:
@@ -92,7 +92,10 @@ def parse(reader: TokenReader, errors: Errors) -> ast.Node|None:
             tree2 = parse_expr(reader, errors)
             find_expected(reader, {tokenizer.Type.eol}, errors)
 
-            tree = ast.add([tree, ast.neg(tree2)])
+            if tree is not None and tree2 is not None:
+                neg_tree2 = ast.neg(tree2)
+                if neg_tree2 is not None:
+                    tree = ast.add([tree, neg_tree2])
 
     return tree
 
@@ -126,20 +129,22 @@ def parse_sum(reader: TokenReader, errors: Errors) -> ast.Node|None:
         reader.move_next()
 
     tree = parse_product(reader, errors)
-    if neg:
+    if neg and tree is not None:
         tree = ast.neg(tree)
+    operands: list[ast.Node] = [tree] if tree is not None else []
 
-    operands = [tree]
     if find_expected(reader, all_tokens | {tokenizer.Type.eol}, errors):
         while reader.look_next().typ in (tokenizer.Type.add, tokenizer.Type.sub):
             neg = reader.look_next().typ == tokenizer.Type.sub
             reader.move_next()
             tree = parse_product(reader, errors)
-            if neg:
+            if neg and tree is not None:
                 tree = ast.neg(tree)
+            if tree is not None:
+                operands.append(tree)
 
-            operands.append(tree)
-
+    if not operands:
+        return None
     return ast.add(operands)
 
 
@@ -158,7 +163,7 @@ def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
     :return: AST
     """
     operation = None
-    operands = []
+    operands: list[ast.Node] = []
     while True:
         if not find_expected(reader, prod_starts, errors):
             break
@@ -167,18 +172,23 @@ def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
         if prev_tok.typ == tokenizer.Type.id:
             tree = parse_var_or_func(reader, errors)
         elif prev_tok.typ == tokenizer.Type.number:
-            tree = ast.number(reader.move_next().number)
+            num = reader.move_next().number
+            if num is not None:
+                tree = ast.number(num)
+            else:
+                tree = None
         elif prev_tok.typ == tokenizer.Type.l_paren:
             tree = parse_expr_in_parenthesis(reader, errors)
         else:
             raise ValueError(f'unexpected token in parse_product: {prev_tok.typ}')
 
-        if operation == ast.OpKind.mul:
-            operands.append(tree)
-        elif operation == ast.OpKind.inv:
-            operands.append(ast.inv(tree))
-        else:
-            operands.append(tree)
+        if tree is not None:
+            if operation == ast.OpKind.mul:
+                operands.append(tree)
+            elif operation == ast.OpKind.inv:
+                operands.append(ast.inv(tree))
+            else:
+                operands.append(tree)
 
         if prev_tok.typ == tokenizer.Type.number and operation in (None, ast.OpKind.mul):
             if not find_expected(reader, all_tokens - {tokenizer.Type.number} | {tokenizer.Type.eol}, errors):
@@ -204,6 +214,8 @@ def parse_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
         else:
             break
 
+    if not operands:
+        return None
     return ast.mul(operands)
 
 
@@ -230,13 +242,18 @@ def parse_short_product(reader: TokenReader, errors: Errors) -> ast.Node|None:
     if reader.look_next().typ == tokenizer.Type.l_paren:
         return parse_expr_in_parenthesis(reader, errors)
 
-    operands = []
+    operands: list[ast.Node] = []
     if reader.look_next().typ == tokenizer.Type.number:
-        operands.append(ast.number(reader.move_next().number))
+        num_val = reader.move_next().number
+        operands.append(ast.number(num_val if num_val is not None else 0))
 
     if reader.look_next().typ == tokenizer.Type.id:
-        operands.append(parse_var_or_func(reader, errors))
+        node = parse_var_or_func(reader, errors)
+        if node is not None:
+            operands.append(node)
 
+    if not operands:
+        return None
     return ast.mul(operands)
 
 
@@ -260,11 +277,13 @@ def parse_diff_args(reader: TokenReader, errors: Errors) -> list[ast.Node]|None:
     if not find_expected(reader, {tokenizer.Type.id}, errors):
         return None
 
-    name = reader.move_next().name
+    name = reader.move_next().name or ''
     var = ast.variable(name)
     if find_expected(reader, {tokenizer.Type.r_paren}, errors):
         reader.move_next()
 
+    if expr is None:
+        return None
     return [expr, var]
 
 
@@ -283,21 +302,25 @@ def parse_var_or_func(reader: TokenReader, errors: Errors) -> ast.Node|None:
     if not find_expected(reader, {tokenizer.Type.id}, errors):
         return None
 
-    name = reader.move_next().name
+    name = reader.move_next().name or ''
     if name == 'log':
-        tree = ast.log(parse_short_product(reader, errors))
-    elif name == 'exp':
-        tree = ast.exp(parse_short_product(reader, errors))
-    elif name == 'evalf':
-        tree = ast.evalf(parse_short_product(reader, errors))
-    elif name == 'expand':
-        tree = ast.expand(parse_short_product(reader, errors))
-    elif name == 'diff':
-        tree = ast.diff(parse_diff_args(reader, errors))
-    else:
-        tree = ast.variable(name)
-
-    return tree
+        arg = parse_short_product(reader, errors)
+        return ast.log(arg) if arg is not None else None
+    if name == 'exp':
+        arg = parse_short_product(reader, errors)
+        return ast.exp(arg) if arg is not None else None
+    if name == 'evalf':
+        arg = parse_short_product(reader, errors)
+        return ast.evalf(arg) if arg is not None else None
+    if name == 'expand':
+        arg = parse_short_product(reader, errors)
+        return ast.expand(arg) if arg is not None else None
+    if name == 'diff':
+        diff_args = parse_diff_args(reader, errors)
+        if diff_args is None:
+            return None
+        return ast.diff(diff_args)
+    return ast.variable(name)
 
 
 def parse_expr_in_parenthesis(reader: TokenReader, errors: Errors) -> ast.Node|None:

@@ -25,8 +25,9 @@ def _one_evalf(expr: ast.One) -> ast.One:
 def _add_evalf(expr: ast.Add) -> ast.Node:
     evaluated = [evalf(n) for n in expr.operands]
     val = sum(n.coeff for n in evaluated if n.numeric())
-    terms = []
-    terms.append(ast.number(val)) if val != 0 else ...
+    terms: list[ast.Node] = []
+    if val != 0:
+        terms.append(ast.number(val))
     terms.extend(n for n in evaluated if not n.numeric())
 
     return ast.add(terms, coeff=expr.coeff, variables=expr.vars)

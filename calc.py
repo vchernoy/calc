@@ -86,7 +86,7 @@ def main() -> None:
             break
 
         tok_reader = parser.TokenReader(token_list)
-        errors = []
+        errors: parser.Errors = []
         expr = parser.parse(tok_reader, errors)
 
         if errors:

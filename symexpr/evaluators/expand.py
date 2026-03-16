@@ -23,7 +23,7 @@ def one_expand(expr: ast.One) -> ast.Node:
 @expand.register(ast.Inv)
 @expand.register(ast.Log)
 @expand.register(ast.Exp)
-def _expand(expr) -> ast.Node:
+def _expand_unary(expr: ast.Node) -> ast.Node:
     evaluated = [expand(n) for n in expr.operands]
     return ast.new(
         operation=expr.operation,
@@ -46,7 +46,7 @@ def _diff_expand(expr: ast.Diff) -> ast.Node:
 
 @expand.register(ast.Evalf)
 @expand.register(ast.Expand)
-def _expand(expr: ast.Node) -> ast.Node:
+def _expand_special(expr: ast.Node) -> ast.Node:
     apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
         ast.OpKind.evalf: evaluators.evalf,
         ast.OpKind.expand: evaluators.expand,
@@ -76,7 +76,7 @@ def _mul_expand(expr: ast.Mul) -> ast.Node:
     term: ast.Node = ast.term(coeff=expr.coeff, variables=expr.vars)
     expanded: list[ast.Node] = [term] + [expand(n) for n in expr.operands]
 
-    res = [ast.number(1)]
+    res: list[ast.Node] = [ast.number(1)]
     for term in expanded:
         if term.operation != ast.OpKind.add:
             res = [evaluators.simplify(ast.mul(operands=[term, t])) for t in res]

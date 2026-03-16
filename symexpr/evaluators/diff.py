@@ -38,7 +38,7 @@ def _one_diff(expr: ast.One, var: str) -> ast.Node:
     else:
         vars_copy[var] = p - 1
 
-    return ast.term(coeff=expr.coeff * p, variables=vars_copy if vars_copy else None)
+    return ast.term(coeff=expr.coeff * p, variables=vars_copy if vars_copy else collections.Counter())
 
 
 @diff.register
@@ -73,8 +73,11 @@ def _inv_diff(expr: ast.Inv, var: str) -> ast.Node:
     # d/dx (1/A) = -(dA/dx) / A^2
     a = expr.operands[0]
     da = evaluators.diff(a, var)
+    neg_da = ast.neg(da)
+    if neg_da is None:
+        raise ValueError('neg(da) returned None')
     return ast.mul([
-        ast.neg(da),
+        neg_da,
         ast.inv(ast.mul([a, a]))
     ], coeff=expr.coeff, variables=expr.vars)
 

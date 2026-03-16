@@ -2,6 +2,7 @@ import collections
 import functools
 import itertools
 from collections.abc import Callable
+from typing import cast
 
 import symexpr.ast as ast
 from symexpr import evaluators
@@ -55,12 +56,18 @@ def _exp_simplify(expr: ast.Exp) -> ast.Node:
 def _log_simplify(expr: ast.Log) -> ast.Node:
     evaluated = simplify(expr.operands[0])
     if evaluated.operation in (ast.OpKind.exp, ast.OpKind.mul, ast.OpKind.one, ast.OpKind.inv):
-        nodes = []
-        nodes.append(ast.log(ast.number(evaluated.coeff))) if evaluated.coeff != 1 else ...
+        nodes: list[ast.Node] = []
+        if evaluated.coeff != 1:
+            nodes.append(ast.log(ast.number(evaluated.coeff)))
         nodes.extend(ast.log(expr=ast.variable(v), coeff=p) for v, p in evaluated.vars.items())
-        nodes.append(evaluated.operands[0]) if evaluated.operation == ast.OpKind.exp else ...
-        nodes.extend(ast.log(expr=n) for n in evaluated.operands) if evaluated.operation == ast.OpKind.mul else ...
-        nodes.append(ast.neg(ast.log(evaluated.operands[0]))) if evaluated.operation == ast.OpKind.inv else ...
+        if evaluated.operation == ast.OpKind.exp:
+            nodes.append(evaluated.operands[0])
+        if evaluated.operation == ast.OpKind.mul:
+            nodes.extend(ast.log(expr=n) for n in evaluated.operands)
+        if evaluated.operation == ast.OpKind.inv:
+            neg_log = ast.neg(ast.log(evaluated.operands[0]))
+            if neg_log is not None:
+                nodes.append(neg_log)
 
         return ast.add(
             variables=expr.vars,
@@ -113,7 +120,7 @@ def _add_simplify(expr: ast.Add) -> ast.Node:
     terms = [t for t in evaluated if t.operation == ast.OpKind.one]
     non_terms = [t for t in evaluated if t.operation != ast.OpKind.one]
 
-    d = {}
+    d: dict[str, ast.Node] = {}
     for t in terms:
         k = t.footprint()
         if k in d:
@@ -123,7 +130,7 @@ def _add_simplify(expr: ast.Add) -> ast.Node:
 
     evaluated = [t for t in d.values() if t.coeff != 0] + non_terms
 
-    pos_degree = {}
+    pos_degree: dict[int, list[ast.Node]] = {}
     for t in evaluated:
         if t.degree() >= 0:
             pos_degree.setdefault(t.degree(), []).append(t)
@@ -165,7 +172,7 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
             evaluated2.append(simplify(ast.new(operation=n.operation, operands=n.operands)))
 
     evaluated3 = [n for n in evaluated2 if n.operation != ast.OpKind.inv]
-    inv_coeff = 1
+    inv_coeff: float = 1.0
     for n in evaluated2:
         if n.operation not in [ast.OpKind.inv, ast.OpKind.add, ast.OpKind.log, ast.OpKind.exp, ast.OpKind.evalf]:
             raise ValueError(f'unexpected operation in _mul_simplify: {n.operation}')
@@ -193,8 +200,9 @@ def _mul_simplify(expr: ast.Mul) -> ast.Node:
 
     n = ast.inv(expr=ast.term(inv_coeff, inv_vars), variables=pos_vars, coeff=res_coeff)
 
-    return ast.mul(evaluated, coeff=n.coeff, variables=n.vars) if n.operation == ast.OpKind.one \
-        else ast.mul(evaluated+[n])
+    operands: list[ast.Node] = list(evaluated)
+    return ast.mul(operands, coeff=n.coeff, variables=n.vars) if n.operation == ast.OpKind.one \
+        else ast.mul(operands + [n])
 
 
 @simplify.register
@@ -230,17 +238,16 @@ def _inv_simplify(expr: ast.Inv) -> ast.Node:
     if evaluated.operation == ast.OpKind.mul:
         inversed_terms = [ast.inv(t) for t in evaluated.operands if t.operation == ast.OpKind.inv]
         other_terms = [t for t in evaluated.operands if t.operation != ast.OpKind.inv]
-        return simplify(
-            ast.mul(
-                operands=[
-                    ast.inv(
-                        ast.mul(other_terms, coeff=evaluated.coeff, variables=inv_vars),
-                        coeff=expr.coeff,
-                        variables=pos_vars
-                    )
-                ] + inversed_terms
-            )
+        inv_first = ast.inv(
+            ast.mul(cast(list[ast.Node], other_terms), coeff=evaluated.coeff, variables=inv_vars),
+            coeff=expr.coeff,
+            variables=pos_vars
         )
+        operands = cast(
+            list[ast.Node],
+            ([inv_first] if inv_first is not None else []) + inversed_terms
+        )
+        return simplify(ast.mul(operands=operands))
 
     return ast.inv(
         simplify(

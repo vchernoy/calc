@@ -13,6 +13,10 @@ def stringify(expr: ast.Node, in_parenthesis: bool = False) -> str:
     raise TypeError(f'cannot stringify {expr}, in_parenthesis={in_parenthesis}')
 
 
+def _coeff_str(c: float) -> str:
+    return str(int(c)) if c == int(c) else str(c)
+
+
 def _vars_to_str(expr: ast.Node, _: bool = False) -> str:
     return '*'.join(itertools.chain.from_iterable([v] * d for v, d in sorted(expr.vars.items())))
 
@@ -23,7 +27,7 @@ def _add_stringify(self: ast.Add, in_parenthesis: bool = False) -> str:
     if self.coeff == -1:
         res = '-'
     elif self.coeff != 1:
-        res = str(self.coeff)
+        res = _coeff_str(self.coeff)
 
     if self.vars:
         res += _vars_to_str(self) + '*'
@@ -45,7 +49,7 @@ def _mul_stringify(self: ast.Mul, in_parenthesis: bool = False) -> str:
     if self.coeff == -1:
         res = '-'
     elif self.coeff != 1:
-        res = str(self.coeff)
+        res = _coeff_str(self.coeff)
 
     if self.vars:
         res += _vars_to_str(self) + '*('
@@ -62,7 +66,7 @@ def _inv_stringify(self: ast.Inv, in_parenthesis: bool = False) -> str:
     if self.coeff == -1 and self.vars:
         res = '-'
     elif self.coeff != 1 or not self.vars:
-        res = str(self.coeff)
+        res = _coeff_str(self.coeff)
     else:
         res = ''
 
@@ -78,7 +82,7 @@ def _one_stringify(self: ast.One, in_parenthesis: bool = False) -> str:
     if self.coeff == -1 and self.vars:
         res = '-'
     elif self.coeff != 1 or not self.vars:
-        res = str(self.coeff)
+        res = _coeff_str(self.coeff)
 
     res += _vars_to_str(self)
     around_parenthesis = in_parenthesis and ((self.coeff != 1 and self.vars) or self.coeff < 0)
@@ -91,7 +95,7 @@ def _diff_stringify(self: ast.Diff, in_parenthesis: bool = False) -> str:
     if self.coeff == -1:
         res = '-'
     elif self.coeff != 1:
-        res = str(self.coeff)
+        res = _coeff_str(self.coeff)
 
     if self.vars:
         res += _vars_to_str(self) + '*'
@@ -110,7 +114,7 @@ def _stringify(self: ast.Log, in_parenthesis: bool = False) -> str:
     if self.coeff == -1:
         res = '-'
     elif self.coeff != 1:
-        res = str(self.coeff)
+        res = _coeff_str(self.coeff)
 
     if self.vars:
         res += _vars_to_str(self) + '*'
