@@ -4,13 +4,13 @@ import symexpr.ast as ast
 
 
 @functools.singledispatch
-def stringify(_1, _2: bool = False) -> str:
+def stringify(expr: ast.Node, in_parenthesis: bool = False) -> str:
     """
-    :param _1: AST
-    :param _2: bool
-    :return: AST
+    :param expr: AST
+    :param in_parenthesis: whether to wrap result in parentheses
+    :return: string representation
     """
-    raise TypeError('cannot stringify {expr}, {in_parenthesis=}')
+    raise TypeError(f'cannot stringify {expr}, in_parenthesis={in_parenthesis}')
 
 
 def _vars_to_str(expr: ast.Node, _: bool = False) -> str:

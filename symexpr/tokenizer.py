@@ -59,7 +59,14 @@ class Token:
     If typ is Type.number, the token contains number (integer of float)
     If type is Type.error, the token contains err representing the Lexer error.
     """
-    def __init__(self, loc: int, typ: Type, name: str = None, num: ast.Num = None, err: Error = None):
+    def __init__(
+        self,
+        loc: int,
+        typ: Type,
+        name: str | None = None,
+        num: ast.Num | None = None,
+        err: Error | None = None,
+    ):
         if not isinstance(typ, Type):
             raise ValueError(f'typ must be Type, got {type(typ)}')
         if not isinstance(loc, int):

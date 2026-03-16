@@ -1,3 +1,4 @@
+import symexpr.ast as ast
 import symexpr.tokenizer as tokenizer
 import symexpr.parser as parser
 import symexpr.evaluators as evaluators
@@ -16,7 +17,7 @@ class TestCalc(unittest.TestCase):
         ('10.-20.+30.-40.+50.-60.+70.-80.', -40.0),
     )
 
-    def _test_int(self, inp: str, expected: int | None = None):
+    def _test_int(self, inp: str, expected: int | None = None) -> None:
         expected = int(inp) if expected is None else expected
         expr, errors = parse(inp)
         self.assertEqual(errors, [])
@@ -26,7 +27,7 @@ class TestCalc(unittest.TestCase):
         expr2 = evaluators.evalf(expr)
         self.assertEqual(int(str(expr2)), expected)
 
-    def _test_float(self, inp: str, expected: float | None = None):
+    def _test_float(self, inp: str, expected: float | None = None) -> None:
         expected = float(inp) if expected is None else expected
         expr, errors = parse(inp)
         self.assertEqual(errors, [])
@@ -36,14 +37,14 @@ class TestCalc(unittest.TestCase):
         expr2 = evaluators.evalf(expr)
         self.assertEqual(float(str(expr2)), expected)
 
-    def test_table(self):
+    def test_table(self) -> None:
         table: tuple[str, ...] = (
             '0', '000', '+0', '1', '-1', '1234', '-903341234', '13156545', '00013145353',
         )
         for inp in table:
             self._test_int(inp)
 
-    def test_int_arith(self):
+    def test_int_arith(self) -> None:
         table: tuple[tuple[str, int], ...] = (
             ('1+2+3+4+5+6+7+8+9', 45),
             ('-1+1' * 20, 0),
@@ -57,16 +58,16 @@ class TestCalc(unittest.TestCase):
         for inp, expected in table:
             self._test_int(inp, expected)
 
-    def test_int_range(self):
+    def test_int_range(self) -> None:
         for n in range(2000):
             for inp in f'{n}', f'+{n}', f'-{n}':
                 self._test_int(inp)
 
-    def test_float_arith(self):
+    def test_float_arith(self) -> None:
         for inp, expected in TestCalc._table:
             self._test_float(inp, expected)
 
-    def test_numeric_arith(self):
+    def test_numeric_arith(self) -> None:
         for inp, expected in TestCalc._table:
             expr, errors = parse(inp)
             self.assertEqual(errors, [])
@@ -76,7 +77,7 @@ class TestCalc(unittest.TestCase):
             expr2 = evaluators.expand(expr)
             self.assertEqual(float(str(evaluators.evalf(expr2))), expected)
 
-    def test_harmonic_num(self):
+    def test_harmonic_num(self) -> None:
         gama = 0.577265669068499
         for n in 100, 1000, 10000:
             inp = f'{" + ".join(("1/" + str(j)) for j in range(1, n + 1))} - log({n})'
@@ -91,19 +92,19 @@ class TestCalc(unittest.TestCase):
             val2 = float(str(evaluators.evalf(expr2)))
             self.assertAlmostEqual(val2, gama, delta=0.5 / n)
 
-    def test_float_range(self):
+    def test_float_range(self) -> None:
         for m in range(2000):
             n = m / 5
             for inp in f'{n}', f'+{n}', f'-{n}':
                 self._test_float(inp)
 
-    def test_float_e_range(self):
+    def test_float_e_range(self) -> None:
         for m in range(2000):
             n = m / 5
             for inp in f'{n}' + 'E-20', f'+{n}e+10', f'-{n}e15':
                 self._test_float(inp)
 
-    def test_binomial_num(self):
+    def test_binomial_num(self) -> None:
         for n in 10, 100, 1000:
             inp = ' * '.join(['(2. - 1.)'] * n)
             expr, errors = parse(inp)
@@ -117,7 +118,7 @@ class TestCalc(unittest.TestCase):
             val2 = float(str(evaluators.evalf(expr2)))
             self.assertAlmostEqual(val2, 1, delta=0.)
 
-    def test_diff(self):
+    def test_diff(self) -> None:
         cases = [
             ('diff(x*x, x)', '2x'),
             ('diff(x*x+3*x, x)', '3+(2x)'),
@@ -131,7 +132,7 @@ class TestCalc(unittest.TestCase):
             result = str(evaluators.simplify(expr))
             self.assertEqual(result, expected, f'diff: {inp} => {result}, expected {expected}')
 
-    def test_subse(self):
+    def test_subse(self) -> None:
         """Test AST substitution (subse) with expression values."""
         expr, errors = parse('2*x+1')
         self.assertEqual(errors, [])
@@ -143,7 +144,7 @@ class TestCalc(unittest.TestCase):
         with_y0 = evaluators.subs(subbed, {'y': 0})
         self.assertEqual(float(str(evaluators.simplify(with_y0))), 3.0)
 
-    def test_symbolic(self):
+    def test_symbolic(self) -> None:
         for n in 1, 10, 20, 100, 101:
             inp = ' * '.join(['(a+b) * (a-b)'] * n)
             expr, errors = parse(inp)
@@ -161,7 +162,7 @@ class TestCalc(unittest.TestCase):
                     self.assertEqual(val, str(expected))
 
 
-def parse(inp):
-    errors = []
+def parse(inp: str) -> tuple[ast.Node | None, parser.Errors]:
+    errors: parser.Errors = []
     return parser.parse(parser.TokenReader(list(tokenizer.tokenize(tokenizer.Scanner(inp)))), errors), errors
 

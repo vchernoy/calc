@@ -8,7 +8,7 @@ from symexpr import evaluators
 
 
 @functools.singledispatch
-def simplify(expr) -> ast.Node:
+def simplify(expr: ast.Node) -> ast.Node:
     """
     simplifies the given AST, performs basic transformation, does not open parentheses in a(b+c),
     but can simplify a + b + c or a * b * c
@@ -89,7 +89,7 @@ def _diff_simplify(expr: ast.Diff) -> ast.Node:
 
 @simplify.register(ast.Evalf)
 @simplify.register(ast.Expand)
-def _simplify(expr) -> ast.Node:
+def _simplify(expr: ast.Node) -> ast.Node:
     apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
         ast.OpKind.evalf: evaluators.evalf,
         ast.OpKind.expand: evaluators.expand,

@@ -54,7 +54,7 @@ class Node:
         if not isinstance(self.operands, list):
             raise ValueError(f'operands must be list, got {type(self.operands)}')
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         raise NotImplementedError()
 
     def numeric(self) -> bool:
@@ -96,7 +96,7 @@ class Add(Node):
         if len(self.operands) < 2:
             raise ValueError('Add requires at least 2 operands')
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         return _degree(self, var) + max(n.degree(var) for n in self.operands)
 
     def numeric(self) -> bool:
@@ -117,7 +117,7 @@ class Mul(Node):
         if len(self.operands) < 2:
             raise ValueError('Mul requires at least 2 operands')
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         return _degree(self, var) + sum(n.degree(var) for n in self.operands)
 
     def numeric(self) -> bool:
@@ -138,7 +138,7 @@ class Inv(Node):
         if len(self.operands) != 1:
             raise ValueError('Inv requires exactly 1 operand')
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         return _degree(self, var) - self.operands[0].degree(var)
 
     def numeric(self) -> bool:
@@ -157,7 +157,7 @@ class One(Node):
     def __init__(self, coeff: Num = 1, variables: VarTerm = None):
         super().__init__(OpKind.one, coeff, variables)
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
 
     def numeric(self) -> bool:
@@ -178,7 +178,7 @@ class Log(Node):
         if len(self.operands) != 1:
             raise ValueError('Log requires exactly 1 operand')
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
 
     def numeric(self) -> bool:
@@ -199,7 +199,7 @@ class Exp(Node):
         if len(self.operands) != 1:
             raise ValueError('Exp requires exactly 1 operand')
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
 
     def numeric(self) -> bool:
@@ -219,7 +219,7 @@ class Evalf(Node):
         if len(self.operands) != 1:
             raise ValueError('Evalf requires exactly 1 operand')
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
 
     def numeric(self) -> bool:
@@ -239,7 +239,7 @@ class Expand(Node):
         if len(self.operands) != 1:
             raise ValueError('Expand requires exactly 1 operand')
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
 
     def numeric(self) -> bool:
@@ -259,7 +259,7 @@ class Diff(Node):
         if len(self.operands) != 2:
             raise ValueError('Diff requires exactly 2 operands (expr, var)')
 
-    def degree(self, var: str = None) -> int:
+    def degree(self, var: str | None = None) -> int:
         return _degree(self, var)
 
     def numeric(self) -> bool:
@@ -412,7 +412,7 @@ def diff(args: Nodes, variables: VarTerm = None, coeff: Num = 1) -> One | Exp:
         else term(coeff=coeff, variables=variables)
 
 
-def _degree(expr: Node, var: str = None) -> int:
+def _degree(expr: Node, var: str | None = None) -> int:
     return expr.vars.get(var, 0) if var else sum(expr.vars.values())
 
 

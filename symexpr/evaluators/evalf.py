@@ -7,13 +7,13 @@ from symexpr import evaluators
 
 
 @functools.singledispatch
-def evalf(_) -> ast.Node:
+def evalf(expr: ast.Node) -> ast.Node:
     """
     Computes the expression in floating points, but does not change any variables.
-    :param _: AST
+    :param expr: AST
     :return: AST
     """
-    raise TypeError(f'cannot evalf {_}')
+    raise TypeError(f'cannot evalf {expr}')
 
 
 @evalf.register
@@ -99,7 +99,7 @@ def _diff_evalf(expr: ast.Diff) -> ast.Node:
 
 @evalf.register(ast.Evalf)
 @evalf.register(ast.Expand)
-def _evalf(expr) -> ast.Node:
+def _evalf(expr: ast.Node) -> ast.Node:
     apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
         ast.OpKind.evalf: evaluators.evalf,
         ast.OpKind.expand: evaluators.expand,

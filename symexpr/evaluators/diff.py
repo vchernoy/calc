@@ -103,7 +103,7 @@ def _exp_diff(expr: ast.Exp, var: str) -> ast.Node:
 
 @diff.register(ast.Evalf)
 @diff.register(ast.Expand)
-def _special_diff(expr, var: str) -> ast.Node:
+def _special_diff(expr: ast.Node, var: str) -> ast.Node:
     apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
         ast.OpKind.evalf: evaluators.evalf,
         ast.OpKind.expand: evaluators.expand,

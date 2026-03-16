@@ -8,7 +8,7 @@ from symexpr.evaluators.expand import expand
 
 
 @functools.singledispatch
-def solve(expr, var: str) -> tuple[ast.Node, ast.Node] | None:
+def solve(expr: ast.Node, var: str) -> tuple[ast.Node, ast.Node] | None:
     """
     Tries to solve the equation given in the form of AST.
     solve('2x-10') => ('5', 'x') meaning that x=5 is the root of 2x-10=0
@@ -122,7 +122,7 @@ def _add_solve(expr: ast.Add, var: str) -> tuple[ast.Node, ast.Node] | None:
 
 @solve.register(ast.Evalf)
 @solve.register(ast.Expand)
-def _solve(expr, var: str) -> tuple[ast.Node, ast.Node] | None:
+def _solve(expr: ast.Node, var: str) -> tuple[ast.Node, ast.Node] | None:
     apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
         ast.OpKind.evalf: evaluators.evalf,
         ast.OpKind.expand: evaluators.expand,

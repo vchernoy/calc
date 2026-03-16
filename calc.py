@@ -28,7 +28,7 @@ def s_len(n: ast.Node) -> int:
     return len(str(n))
 
 
-def print_errors(inp: str, errors: parser.Errors):
+def print_errors(inp: str, errors: parser.Errors) -> None:
     errors.sort(key=operator.attrgetter('loc'))
     buf = [' '] * (len(inp) + 1)
     for err in errors:
@@ -41,7 +41,7 @@ def print_errors(inp: str, errors: parser.Errors):
         print(err)
 
 
-def check_solution(simplified: ast.Node, var: str, solution: ast.Node):
+def check_solution(simplified: ast.Node, var: str, solution: ast.Node) -> None:
     print('checking the solution...')
     subs_ast = evaluators.subse(simplified, {var: solution})
     # print 'substituted the solution to the expression: ', subs_ast
@@ -77,7 +77,7 @@ def check_solution(simplified: ast.Node, var: str, solution: ast.Node):
         print('oops... something wrong happened, test it more!')
 
 
-def main():
+def main() -> None:
     n_line = 1
     while True:
         inp = input(f'input {n_line} > ')

@@ -6,7 +6,7 @@ from symexpr import evaluators
 
 
 @functools.singledispatch
-def expand(expr) -> ast.Node:
+def expand(expr: ast.Node) -> ast.Node:
     """
     Opens parentheses if meets a(b + x)
     :param expr: AST
@@ -46,7 +46,7 @@ def _diff_expand(expr: ast.Diff) -> ast.Node:
 
 @expand.register(ast.Evalf)
 @expand.register(ast.Expand)
-def _expand(expr) -> ast.Node:
+def _expand(expr: ast.Node) -> ast.Node:
     apply: dict[ast.OpKind, Callable[[ast.Node], ast.Node]] = {
         ast.OpKind.evalf: evaluators.evalf,
         ast.OpKind.expand: evaluators.expand,
